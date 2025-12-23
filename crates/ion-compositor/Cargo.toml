@@ -7,6 +7,10 @@ description = "Compositor-side input injection for COSMIC remote desktop"
 authors.workspace = true
 repository.workspace = true
 
+[[bin]]
+name = "capability-check"
+path = "src/bin/capability-check.rs"
+
 [dependencies]
 # Internal
 ion-core.workspace = true
@@ -21,7 +25,7 @@ zvariant.workspace = true
 # reis = { version = "0.5", features = ["tokio"] }
 
 # Async
-tokio = { workspace = true, features = ["sync", "rt", "time", "net"] }
+tokio = { workspace = true, features = ["sync", "rt", "rt-multi-thread", "time", "net", "macros"] }
 futures.workspace = true
 
 # Error handling
@@ -29,10 +33,10 @@ thiserror.workspace = true
 
 # Logging
 tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
-tracing-subscriber.workspace = true
 
 [lints]
 workspace = true

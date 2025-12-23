@@ -6,31 +6,56 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md)
 [![CI](https://github.com/DataScienceBioLab/ionChannel/workflows/CI/badge.svg)](https://github.com/DataScienceBioLab/ionChannel/actions)
 
-**Enable RustDesk and remote desktop tools on Pop!_OS COSMIC (Wayland).**
+**Robust remote desktop for Wayland — works everywhere, including VMs and cloud.**
 
 A [syntheticChemistry](https://github.com/DataScienceBioLab) project.
 
 ---
 
-## The Problem
+## The Problem (Expanded)
 
-COSMIC implements `ScreenCast` but not `RemoteDesktop`:
+COSMIC and most Wayland compositors assume real GPU hardware for remote desktop:
 
-| Portal | Status | Impact |
-|--------|--------|--------|
-| `ScreenCast` | ✅ Available | View screen works |
-| `RemoteDesktop` | ❌ Missing | **Can't control screen** |
+| Scenario | Current Wayland | ionChannel |
+|----------|----------------|------------|
+| Bare metal + GPU | ⚠️ Portal missing | ✅ Works |
+| **VM (virtio-gpu)** | ❌ Crashes | ✅ Graceful fallback |
+| **Cloud VM (AWS/GCP)** | ❌ No dmabuf | ✅ wl_shm fallback |
+| **Multi-VM server** | ❌ Can't remote in | ✅ CPU capture |
+| **Headless server** | ❌ No GPU | ✅ Input-only mode |
 
-**Result:** RustDesk can see COSMIC desktops but can't inject mouse/keyboard.
+### Discovery
+
+During VM testing, we found COSMIC's portal crashes on:
+```
+zwp_linux_dmabuf_v1 version 4 required → Virtual GPUs don't support this
+```
+
+**This breaks entire deployment categories:** VDI, cloud, server management, dev/test.
 
 ## The Solution
 
+ionChannel implements **tiered graceful degradation**:
+
 ```
-RustDesk ──► ion-portal ──► ion-compositor ──► COSMIC Desktop
-              (D-Bus)         (EIS/Smithay)
+┌─────────────────────────────────────────────────────────────────┐
+│                    ionChannel Architecture                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Screen Capture (auto-selects best available):                │
+│   ├─► dmabuf (GPU zero-copy) ──► Best performance              │
+│   ├─► wl_shm (shared memory) ──► Works in VMs                  │
+│   └─► CPU framebuffer ──► Works everywhere                     │
+│                                                                 │
+│   Input Injection (GPU-independent):                           │
+│   └─► libei/EIS ──► Always works                               │
+│                                                                 │
+│   Philosophy: Never crash, degrade gracefully                  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-Four Rust crates implementing the missing infrastructure:
+## Crates
 
 ```
 ionChannel/crates/
@@ -52,79 +77,44 @@ cargo test --workspace   # Run tests
 cargo run -p ion-test-substrate  # Validate implementation
 ```
 
-## Validation Results
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║               ionChannel Validation Report                   ║
-╠══════════════════════════════════════════════════════════════╣
-║ ✓ interface_registered                                       ║
-║ ✓ device_type_keyboard                                       ║
-║ ✓ device_type_pointer                                        ║
-║ ✓ events_captured                                            ║
-╠══════════════════════════════════════════════════════════════╣
-║ Total: 4  Passed: 4  Failed: 0                               ║
-║ ✓ ALL CHECKS PASSED                                          ║
-╚══════════════════════════════════════════════════════════════╝
-```
-
-## Crates
-
-### ion-core
-
-Core types shared across crates:
-
-```rust
-use ion_core::{DeviceType, InputEvent, SessionHandle};
-
-let devices = DeviceType::KEYBOARD | DeviceType::POINTER;
-let event = InputEvent::pointer_motion(10.0, 5.0);
-```
-
-### ion-portal
-
-D-Bus interface `org.freedesktop.impl.portal.RemoteDesktop`:
-
-```rust
-use ion_portal::{RemoteDesktopPortal, SessionManager};
-
-let (manager, rx) = SessionManager::new(config);
-let portal = RemoteDesktopPortal::new(manager);
-```
-
-### ion-compositor
-
-Input injection for Smithay/cosmic-comp:
-
-```rust
-use ion_compositor::{VirtualInput, VirtualInputSink};
-
-impl VirtualInputSink for CosmicState {
-    fn inject_pointer_motion(&mut self, dx: f64, dy: f64) {
-        self.pointer.motion(dx, dy);
-    }
-}
-```
-
 ## Status
 
 | Component | Status |
 |-----------|--------|
 | Core crates | ✅ Complete |
 | Test substrate | ✅ Passing |
-| COSMIC VM validated | ✅ Confirmed missing portal |
-| Documentation | ✅ Complete |
-| Upstream PRs | 🔲 Ready to submit |
+| COSMIC VM testing | ✅ Gap identified |
+| dmabuf capture | 🔲 Upstream COSMIC |
+| **wl_shm fallback** | 🔄 **In Progress** |
+| **CPU fallback** | 🔲 Planned |
+| Input injection (EIS) | ✅ Designed |
+| Upstream PRs | 🔲 After fallbacks |
+
+## Why AGPL-3.0?
+
+We discovered a significant gap in Wayland's remote desktop story. This solution should benefit everyone:
+
+- **AGPL-3.0**: Ensures improvements flow back to the community
+- **System76 Exception**: GPL-3.0 for COSMIC integration (license compatibility)
+
+Cloud providers and VDI vendors using this must share improvements.
 
 ## Development
 
 ```bash
 make help          # Show all commands
 make ci            # Run full CI check
-make portal-check  # Test portal availability (on COSMIC)
+make test          # Run all tests
 ```
 
-See [docs/TESTING.md](docs/TESTING.md) for VM setup and testing details.
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Tiered fallback design |
+| [ROADMAP.md](ROADMAP.md) | Development phases |
+| [docs/TESTING.md](docs/TESTING.md) | VM setup and validation |
+| [docs/EVOLUTION.md](docs/EVOLUTION.md) | Technical decisions |
 
 ## Contributing
 
@@ -137,8 +127,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## License
 
 **AGPL-3.0** with System76 exception — see [LICENSE.md](LICENSE.md)
-
-System76 may use under GPL-3.0 for COSMIC integration.
 
 ---
 

@@ -31,10 +31,12 @@
 pub mod device;
 pub mod error;
 pub mod event;
+pub mod mode;
 pub mod session;
 
 // Re-exports for convenience
 pub use device::DeviceType;
 pub use error::{Error, Result};
 pub use event::{Axis, ButtonState, InputEvent, KeyState};
+pub use mode::{CaptureTierInfo, RemoteDesktopMode, SessionCapabilities};
 pub use session::{SessionHandle, SessionId};

@@ -13,6 +13,7 @@ use zbus::zvariant::{ObjectPath, OwnedValue, Value};
 
 use ion_core::device::DeviceType;
 use ion_core::event::{ButtonState, InputEvent, KeyState};
+use ion_core::mode::RemoteDesktopMode;
 use ion_core::session::SessionId;
 
 use crate::session_manager::SessionManager;
@@ -39,19 +40,46 @@ pub type PortalResult<T> = (u32, T);
 #[derive(Debug, Clone)]
 pub struct RemoteDesktopPortal {
     session_manager: SessionManager,
+    /// The session mode (Full, InputOnly, ViewOnly, None)
+    session_mode: RemoteDesktopMode,
 }
 
 impl RemoteDesktopPortal {
-    /// Creates a new portal instance.
+    /// Creates a new portal instance with full capabilities.
     #[must_use]
     pub fn new(session_manager: SessionManager) -> Self {
-        Self { session_manager }
+        Self {
+            session_manager,
+            session_mode: RemoteDesktopMode::Full,
+        }
+    }
+
+    /// Creates a portal with specific session mode.
+    ///
+    /// Use this when capability detection indicates limited functionality.
+    #[must_use]
+    pub fn with_mode(session_manager: SessionManager, mode: RemoteDesktopMode) -> Self {
+        Self {
+            session_manager,
+            session_mode: mode,
+        }
     }
 
     /// Returns a reference to the session manager.
     #[must_use]
     pub fn session_manager(&self) -> &SessionManager {
         &self.session_manager
+    }
+
+    /// Returns the session mode.
+    #[must_use]
+    pub fn session_mode(&self) -> RemoteDesktopMode {
+        self.session_mode
+    }
+
+    /// Updates the session mode (e.g., after capability detection).
+    pub fn set_session_mode(&mut self, mode: RemoteDesktopMode) {
+        self.session_mode = mode;
     }
 }
 
@@ -141,6 +169,12 @@ impl RemoteDesktopPortal {
     }
 
     /// Starts the remote desktop session.
+    ///
+    /// Returns session capabilities including:
+    /// - `devices`: Authorized device types (keyboard, pointer, etc.)
+    /// - `session_mode`: Operating mode (0=None, 1=ViewOnly, 2=InputOnly, 3=Full)
+    /// - `capture_available`: Whether screen capture is available
+    /// - `input_available`: Whether input injection is available
     #[instrument(skip(self, connection, options))]
     async fn start(
         &self,
@@ -163,11 +197,33 @@ impl RemoteDesktopPortal {
         match session.start().await {
             Ok(()) => {
                 let mut result = HashMap::new();
+                
+                // Standard portal response: authorized devices
                 result.insert(
                     "devices".to_string(),
                     OwnedValue::try_from(session.authorized_devices().await.bits()).unwrap(),
                 );
-                info!(session = %session_id, "Session started");
+                
+                // ionChannel extension: session mode info
+                let mode = self.session_mode;
+                result.insert(
+                    "session_mode".to_string(),
+                    OwnedValue::try_from(mode as u32).unwrap(),
+                );
+                result.insert(
+                    "capture_available".to_string(),
+                    OwnedValue::try_from(mode.has_capture()).unwrap(),
+                );
+                result.insert(
+                    "input_available".to_string(),
+                    OwnedValue::try_from(mode.has_input()).unwrap(),
+                );
+                
+                info!(
+                    session = %session_id,
+                    mode = %mode,
+                    "Session started"
+                );
                 (ResponseCode::Success as u32, result)
             },
             Err(e) => {
