@@ -1,0 +1,460 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright © 2024-2025 System76 + DataScienceBioLab Contributors
+//
+// Draft for: xdg-desktop-portal-cosmic/src/remote_desktop.rs
+// This file is intended for upstream contribution to Pop!_OS COSMIC.
+
+#![allow(dead_code, unused_variables)]
+
+use std::collections::HashMap;
+use std::os::unix::io::OwnedFd;
+use tokio::sync::mpsc::Sender;
+use zbus::zvariant::{self, OwnedValue};
+
+use crate::{PortalResponse, Request, Session};
+use crate::screencast::ScreenCast;  // Reuse for stream handling
+use crate::subscription;
+use crate::wayland::WaylandHelper;
+
+// Device type flags (from portal spec)
+const DEVICE_KEYBOARD: u32 = 1;
+const DEVICE_POINTER: u32 = 2;
+const DEVICE_TOUCHSCREEN: u32 = 4;
+
+// Axis values
+const AXIS_VERTICAL: u32 = 0;
+const AXIS_HORIZONTAL: u32 = 1;
+
+// Key/button state
+const STATE_RELEASED: u32 = 0;
+const STATE_PRESSED: u32 = 1;
+
+#[derive(zvariant::SerializeDict, zvariant::Type)]
+#[zvariant(signature = "a{sv}")]
+struct CreateSessionResult {
+    session_id: String,
+}
+
+#[derive(zvariant::DeserializeDict, zvariant::Type)]
+#[zvariant(signature = "a{sv}")]
+struct SelectDevicesOptions {
+    /// Bitmask of device types to request
+    types: Option<u32>,
+    /// Token for persisting permissions
+    restore_token: Option<String>,
+    /// How to persist permissions (0=none, 1=app, 2=persistent)
+    persist_mode: Option<u32>,
+}
+
+#[derive(zvariant::SerializeDict, zvariant::Type)]
+#[zvariant(signature = "a{sv}")]
+struct SelectDevicesResult {
+    devices: u32,
+}
+
+#[derive(zvariant::SerializeDict, zvariant::Type)]
+#[zvariant(signature = "a{sv}")]
+struct StartResult {
+    /// Device types that were granted
+    devices: u32,
+    /// Screencast streams (if combined with ScreenCast)
+    streams: Option<Vec<(u32, HashMap<String, OwnedValue>)>>,
+    /// Token for restoring this session
+    restore_token: Option<String>,
+}
+
+/// Session data for RemoteDesktop
+#[derive(Default)]
+struct SessionData {
+    /// Requested device types
+    requested_devices: u32,
+    /// Authorized device types (after user consent)
+    authorized_devices: u32,
+    /// Whether this session also has screencast
+    has_screencast: bool,
+    /// Session is active and accepting input
+    active: bool,
+    /// Session was closed
+    closed: bool,
+    /// EIS context (if connected)
+    eis_context: Option<EisContext>,
+}
+
+/// Placeholder for EIS connection state
+/// In practice, this would manage the libeis socket
+struct EisContext {
+    // TODO: reis crate integration
+}
+
+impl SessionData {
+    fn close(&mut self) {
+        self.closed = true;
+        self.active = false;
+        // TODO: Clean up EIS connection
+    }
+}
+
+/// RemoteDesktop portal implementation
+pub struct RemoteDesktop {
+    wayland_helper: WaylandHelper,
+    tx: Sender<subscription::Event>,
+    // Reference to screencast for combined sessions
+    screencast: ScreenCast,
+}
+
+impl RemoteDesktop {
+    pub fn new(
+        wayland_helper: WaylandHelper,
+        tx: Sender<subscription::Event>,
+        screencast: ScreenCast,
+    ) -> Self {
+        Self {
+            wayland_helper,
+            tx,
+            screencast,
+        }
+    }
+}
+
+#[zbus::interface(name = "org.freedesktop.impl.portal.RemoteDesktop")]
+impl RemoteDesktop {
+    /// Create a new remote desktop session
+    async fn create_session(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        handle: zvariant::ObjectPath<'_>,
+        session_handle: zvariant::ObjectPath<'_>,
+        app_id: String,
+        options: HashMap<String, OwnedValue>,
+    ) -> PortalResponse<CreateSessionResult> {
+        log::info!("RemoteDesktop::CreateSession from {}", app_id);
+
+        let session_data = SessionData::default();
+        if let Err(e) = connection
+            .object_server()
+            .at(
+                &session_handle,
+                Session::new(session_data, |data| data.close()),
+            )
+            .await
+        {
+            log::error!("Failed to create session: {}", e);
+            return PortalResponse::Other;
+        }
+
+        PortalResponse::Success(CreateSessionResult {
+            session_id: session_handle.to_string(),
+        })
+    }
+
+    /// Request device access for the session
+    async fn select_devices(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        handle: zvariant::ObjectPath<'_>,
+        session_handle: zvariant::ObjectPath<'_>,
+        app_id: String,
+        options: SelectDevicesOptions,
+    ) -> PortalResponse<HashMap<String, OwnedValue>> {
+        log::info!(
+            "RemoteDesktop::SelectDevices from {}, types={:?}",
+            app_id,
+            options.types
+        );
+
+        let Some(interface) =
+            crate::session_interface::<SessionData>(connection, &session_handle).await
+        else {
+            return PortalResponse::Other;
+        };
+
+        let mut session = interface.get_mut().await;
+        session.requested_devices = options.types.unwrap_or(DEVICE_KEYBOARD | DEVICE_POINTER);
+
+        PortalResponse::Success(HashMap::new())
+    }
+
+    /// Start the remote desktop session
+    ///
+    /// This is where:
+    /// 1. We show a consent dialog to the user
+    /// 2. Set up the EIS connection for input injection
+    /// 3. Optionally set up screencast streams
+    async fn start(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        handle: zvariant::ObjectPath<'_>,
+        session_handle: zvariant::ObjectPath<'_>,
+        app_id: String,
+        parent_window: String,
+        options: HashMap<String, OwnedValue>,
+    ) -> PortalResponse<StartResult> {
+        log::info!("RemoteDesktop::Start from {}", app_id);
+
+        let on_cancel = || async {
+            // TODO: Hide consent dialog if shown
+        };
+
+        Request::run(connection, &handle, on_cancel, async {
+            let Some(interface) =
+                crate::session_interface::<SessionData>(connection, &session_handle).await
+            else {
+                return PortalResponse::Other;
+            };
+
+            let requested_devices = interface.get().await.requested_devices;
+
+            // TODO: Show consent dialog
+            // For now, auto-approve all requested devices
+            // In production, this MUST show a user prompt!
+            let authorized_devices = requested_devices;
+
+            {
+                let mut session = interface.get_mut().await;
+                if session.closed {
+                    return PortalResponse::Cancelled;
+                }
+                session.authorized_devices = authorized_devices;
+                session.active = true;
+            }
+
+            log::info!(
+                "RemoteDesktop session started, authorized devices: {:b}",
+                authorized_devices
+            );
+
+            PortalResponse::Success(StartResult {
+                devices: authorized_devices,
+                streams: None, // TODO: Integrate with screencast if requested
+                restore_token: None,
+            })
+        })
+        .await
+    }
+
+    /// Get a file descriptor to the EIS (Emulated Input Server) socket
+    ///
+    /// Clients use this fd with libei/reis to send input events
+    async fn connect_to_eis(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        app_id: String,
+        options: HashMap<String, OwnedValue>,
+    ) -> zbus::fdo::Result<OwnedFd> {
+        log::info!("RemoteDesktop::ConnectToEIS from {}", app_id);
+
+        let Some(interface) =
+            crate::session_interface::<SessionData>(connection, &session_handle).await
+        else {
+            return Err(zbus::fdo::Error::Failed("Session not found".to_string()));
+        };
+
+        let session = interface.get().await;
+        if !session.active {
+            return Err(zbus::fdo::Error::Failed("Session not active".to_string()));
+        }
+
+        // TODO: Create EIS socket pair and return client fd
+        // This requires cosmic-comp to expose an EIS server
+        //
+        // Example flow:
+        // 1. cosmic-comp creates a socketpair
+        // 2. One end becomes the EIS server (in cosmic-comp)
+        // 3. Other end is returned here as OwnedFd
+        // 4. Client uses reis/libei to send input through this fd
+
+        Err(zbus::fdo::Error::NotSupported(
+            "EIS not yet implemented - requires cosmic-comp support".to_string(),
+        ))
+    }
+
+    // ========== Input notification methods ==========
+    // These are DEPRECATED in favor of EIS, but some clients may still use them
+
+    /// Notify pointer motion (relative)
+    async fn notify_pointer_motion(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        dx: f64,
+        dy: f64,
+    ) -> zbus::fdo::Result<()> {
+        // Validate session and authorization
+        let Some(interface) =
+            crate::session_interface::<SessionData>(connection, &session_handle).await
+        else {
+            return Err(zbus::fdo::Error::Failed("Session not found".to_string()));
+        };
+
+        let session = interface.get().await;
+        if !session.active {
+            return Err(zbus::fdo::Error::Failed("Session not active".to_string()));
+        }
+        if session.authorized_devices & DEVICE_POINTER == 0 {
+            return Err(zbus::fdo::Error::AccessDenied(
+                "Pointer not authorized".to_string(),
+            ));
+        }
+
+        // TODO: Inject into compositor
+        log::debug!("Pointer motion: dx={}, dy={}", dx, dy);
+
+        Ok(())
+    }
+
+    /// Notify pointer motion (absolute, within a stream)
+    async fn notify_pointer_motion_absolute(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        stream: u32,
+        x: f64,
+        y: f64,
+    ) -> zbus::fdo::Result<()> {
+        // Similar validation to notify_pointer_motion
+        log::debug!("Pointer motion absolute: stream={}, x={}, y={}", stream, x, y);
+        Ok(())
+    }
+
+    /// Notify pointer button press/release
+    async fn notify_pointer_button(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        button: i32,
+        state: u32,
+    ) -> zbus::fdo::Result<()> {
+        log::debug!("Pointer button: button={}, state={}", button, state);
+        Ok(())
+    }
+
+    /// Notify pointer axis (scroll)
+    async fn notify_pointer_axis(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        dx: f64,
+        dy: f64,
+    ) -> zbus::fdo::Result<()> {
+        log::debug!("Pointer axis: dx={}, dy={}", dx, dy);
+        Ok(())
+    }
+
+    /// Notify pointer axis discrete (wheel clicks)
+    async fn notify_pointer_axis_discrete(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        axis: u32,
+        steps: i32,
+    ) -> zbus::fdo::Result<()> {
+        log::debug!("Pointer axis discrete: axis={}, steps={}", axis, steps);
+        Ok(())
+    }
+
+    /// Notify keyboard key press/release (by keycode)
+    async fn notify_keyboard_keycode(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        keycode: i32,
+        state: u32,
+    ) -> zbus::fdo::Result<()> {
+        // Validate session has keyboard authorization
+        let Some(interface) =
+            crate::session_interface::<SessionData>(connection, &session_handle).await
+        else {
+            return Err(zbus::fdo::Error::Failed("Session not found".to_string()));
+        };
+
+        let session = interface.get().await;
+        if !session.active {
+            return Err(zbus::fdo::Error::Failed("Session not active".to_string()));
+        }
+        if session.authorized_devices & DEVICE_KEYBOARD == 0 {
+            return Err(zbus::fdo::Error::AccessDenied(
+                "Keyboard not authorized".to_string(),
+            ));
+        }
+
+        log::debug!("Keyboard keycode: keycode={}, state={}", keycode, state);
+        Ok(())
+    }
+
+    /// Notify keyboard key press/release (by keysym)
+    async fn notify_keyboard_keysym(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        keysym: i32,
+        state: u32,
+    ) -> zbus::fdo::Result<()> {
+        log::debug!("Keyboard keysym: keysym={}, state={}", keysym, state);
+        Ok(())
+    }
+
+    /// Notify touch down
+    async fn notify_touch_down(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        stream: u32,
+        slot: u32,
+        x: f64,
+        y: f64,
+    ) -> zbus::fdo::Result<()> {
+        log::debug!("Touch down: stream={}, slot={}, x={}, y={}", stream, slot, x, y);
+        Ok(())
+    }
+
+    /// Notify touch motion
+    async fn notify_touch_motion(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        stream: u32,
+        slot: u32,
+        x: f64,
+        y: f64,
+    ) -> zbus::fdo::Result<()> {
+        log::debug!("Touch motion: stream={}, slot={}, x={}, y={}", stream, slot, x, y);
+        Ok(())
+    }
+
+    /// Notify touch up
+    async fn notify_touch_up(
+        &self,
+        #[zbus(connection)] connection: &zbus::Connection,
+        session_handle: zvariant::ObjectPath<'_>,
+        options: HashMap<String, OwnedValue>,
+        slot: u32,
+    ) -> zbus::fdo::Result<()> {
+        log::debug!("Touch up: slot={}", slot);
+        Ok(())
+    }
+
+    // ========== Properties ==========
+
+    /// Available device types (all supported)
+    #[zbus(property)]
+    async fn available_device_types(&self) -> u32 {
+        DEVICE_KEYBOARD | DEVICE_POINTER | DEVICE_TOUCHSCREEN
+    }
+
+    /// Portal version
+    #[zbus(property, name = "version")]
+    async fn version(&self) -> u32 {
+        2
+    }
+}
+

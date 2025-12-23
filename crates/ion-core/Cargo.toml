@@ -1,0 +1,31 @@
+[package]
+name = "ion-core"
+version.workspace = true
+edition.workspace = true
+license = "AGPL-3.0-or-later"
+description = "Core types and abstractions for ionChannel remote desktop"
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Error handling
+thiserror.workspace = true
+
+# Serialization (for D-Bus)
+serde.workspace = true
+
+# Async primitives
+tokio = { workspace = true, features = ["sync"] }
+
+# Bitflags for device types
+bitflags = "2.4"
+
+# Derive macros for zbus
+zvariant.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
+
+[lints]
+workspace = true
+

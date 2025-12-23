@@ -1,0 +1,39 @@
+[package]
+name = "ion-compositor"
+version.workspace = true
+edition.workspace = true
+license = "AGPL-3.0-or-later"  # System76 exception in LICENSE.md
+description = "Compositor-side input injection for COSMIC remote desktop"
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Internal
+ion-core.workspace = true
+
+# D-Bus
+zbus.workspace = true
+zvariant.workspace = true
+
+# Input injection (libei protocol - pure Rust)
+# NOTE: reis will be used by cosmic-comp, not this crate directly
+# The portal returns an EIS fd, clients use reis/libei to send input
+# reis = { version = "0.5", features = ["tokio"] }
+
+# Async
+tokio = { workspace = true, features = ["sync", "rt", "time", "net"] }
+futures.workspace = true
+
+# Error handling
+thiserror.workspace = true
+
+# Logging
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tracing-subscriber.workspace = true
+
+[lints]
+workspace = true
+

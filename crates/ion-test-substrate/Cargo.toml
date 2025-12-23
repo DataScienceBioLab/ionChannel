@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright © 2024-2025 DataScienceBioLab
+
+[package]
+name = "ion-test-substrate"
+version.workspace = true
+edition.workspace = true
+license = "AGPL-3.0-or-later"
+description = "Headless test substrate for ionChannel - validates portal implementation without GUI"
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+ion-core.workspace = true
+ion-portal.workspace = true
+ion-compositor.workspace = true
+
+# Async runtime
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync", "process", "io-util"] }
+futures.workspace = true
+
+# D-Bus
+zbus.workspace = true
+zvariant.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# CLI
+clap.workspace = true
+
+# Testing utilities
+tempfile = "3.10"
+uuid = { version = "1.7", features = ["v4"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[[bin]]
+name = "ion-validate"
+path = "src/bin/validate.rs"
+

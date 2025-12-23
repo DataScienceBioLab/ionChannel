@@ -1,0 +1,23 @@
+[package]
+name = "portal-test-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Test client for xdg-desktop-portal APIs (ScreenCast, RemoteDesktop)"
+
+[[bin]]
+name = "portal-test"
+path = "src/main.rs"
+
+[dependencies]
+ashpd.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "time"] }
+futures.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+clap.workspace = true
+anyhow.workspace = true
+
+[lints]
+workspace = true
+

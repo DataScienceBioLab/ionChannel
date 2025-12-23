@@ -1,0 +1,121 @@
+[workspace]
+resolver = "2"
+
+members = [
+    # Core library (shared types, traits, abstractions)
+    "crates/ion-core",
+    
+    # Portal implementation (for upstream to xdg-desktop-portal-cosmic)
+    "crates/ion-portal",
+    
+    # Compositor input injection (for upstream to cosmic-comp)
+    "crates/ion-compositor",
+    
+    # Headless test substrate (CI/agent-friendly validation)
+    "crates/ion-test-substrate",
+    
+    # Development/testing tools
+    "crates/portal-test-client",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "AGPL-3.0-or-later WITH System76-exception"
+authors = ["DataScienceBioLab <contact@datasciencebiolab.dev>"]
+repository = "https://github.com/DataScienceBioLab/ionChannel"
+homepage = "https://github.com/DataScienceBioLab/ionChannel"
+description = "Remote desktop portal implementation for COSMIC/Wayland"
+keywords = ["wayland", "remote-desktop", "cosmic", "portal", "rdp"]
+categories = ["os::linux-apis", "network-programming"]
+
+[workspace.dependencies]
+# === Internal crates ===
+ion-core = { path = "crates/ion-core" }
+ion-portal = { path = "crates/ion-portal" }
+ion-compositor = { path = "crates/ion-compositor" }
+
+# === Async Runtime ===
+tokio = { version = "1.40", default-features = false }
+futures = "0.3"
+
+# === D-Bus / Portal ===
+zbus = "4"
+zvariant = "4"
+ashpd = "0.9"
+
+# === Serialization ===
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# === Error Handling ===
+thiserror = "1.0"
+anyhow = "1.0"
+
+# === Logging ===
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# === Utilities ===
+bitflags = "2.4"
+clap = { version = "4.5", features = ["derive"] }
+
+# === Future: Video/RDP ===
+# pipewire = "0.8"
+# ironrdp = "0.5"
+# ironrdp-server = "0.5"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+# Lint groups with lower priority
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+# Allow common false positives (higher priority overrides groups)
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+doc_markdown = "allow"
+significant_drop_tightening = "allow"
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+[profile.bench]
+inherits = "release"
+debug = true
+
+# Package for examples (workspace root)
+[package]
+name = "ionChannel-examples"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+ion-core.workspace = true
+ion-portal.workspace = true
+ion-compositor.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[[example]]
+name = "full_stack_demo"
+path = "examples/full_stack_demo.rs"
+
+[[example]]
+name = "smithay_integration"
+path = "examples/smithay_integration.rs"

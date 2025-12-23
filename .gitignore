@@ -1,0 +1,17 @@
+# Build artifacts
+/target/
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Upstream repos (cloned for reference, not committed)
+/upstream/
+
+# Local config
+.env
+*.local.toml
+
