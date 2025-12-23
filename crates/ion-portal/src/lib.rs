@@ -42,9 +42,11 @@
     clippy::missing_errors_doc
 )]
 
+pub mod core;
 pub mod portal;
 pub mod session_manager;
 
 // Re-exports
+pub use core::PortalCore;
 pub use portal::RemoteDesktopPortal;
 pub use session_manager::SessionManager;
