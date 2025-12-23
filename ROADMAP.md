@@ -7,137 +7,69 @@
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 0 | Research & Specifications | ✅ Complete |
-| 1 | Core Crates (ion-core, ion-portal, ion-compositor) | ✅ Scaffold |
-| 2 | Integration Examples & Testing | ✅ Complete |
-| 3 | Documentation & CI/CD | ✅ Complete |
-| 3.5 | **COSMIC VM Validation** | ✅ **Complete** |
-| 4 | Functional Implementation | 🔄 In Progress |
-| 5 | Upstream Integration | 🔲 Pending |
-| 6 | RustDesk Validation | 🔲 Pending |
-| 7 | Pre-Login RDP | 🔲 Future |
+| 1 | Core Crates | ✅ Complete |
+| 2 | Test Substrate | ✅ Complete |
+| 3 | COSMIC VM Validation | ✅ Complete |
+| 4 | Upstream Engagement | 🔄 Ready |
+| 5 | RustDesk Validation | 🔲 Pending |
+| 6 | Pre-Login RDP | 🔲 Future |
 
 ### Validated Findings (Dec 2024)
 
+Tested on Pop!_OS 24.04 LTS with COSMIC desktop:
+
 ```
-COSMIC Portal Status (Pop!_OS 24.04 LTS):
+Portal Status:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ ScreenCast      - PRESENT (view-only)
-❌ RemoteDesktop   - MISSING (input control)
-❌ InputCapture    - MISSING (input capture)
+✅ ScreenCast      - Available (view-only)
+❌ RemoteDesktop   - MISSING (no input control)  
+❌ InputCapture    - MISSING (stretch goal)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Root cause confirmed: RustDesk cannot inject input
 ```
+
+**Root cause confirmed:** RustDesk cannot inject input on COSMIC.
 
 ---
 
-## Phase 4: Functional Implementation
+## Phase 4: Upstream Engagement
 
-> **NEW PHASE** - Make the scaffold actually work
+### Deliverables Ready
 
-### 4.1 Input Injection (Critical Path)
+| Document | Purpose |
+|----------|---------|
+| `docs/upstream-prs/COSMIC_ISSUE_DRAFT.md` | GitHub issue template |
+| `docs/upstream-prs/INTEGRATION_GUIDE.md` | Step-by-step integration |
+| `docs/upstream-prs/remote_desktop.rs.draft` | Portal implementation |
 
-| Approach | Pros | Cons | Priority |
-|----------|------|------|----------|
-| libei (Emulated Input) | Compositor-agnostic, modern | Needs bindings | ⭐⭐⭐ |
-| Smithay integration | Native to COSMIC | COSMIC-only | ⭐⭐ |
-| uinput | Works everywhere | Needs root, legacy | ⭐ |
+### Next Steps
 
-**Target:** `ion-compositor/src/virtual_input.rs`
-
-### 4.2 PipeWire Integration
-
-```rust
-// Connect RemoteDesktop to existing ScreenCast
-pub async fn start_session(&self, session: &Session) -> Result<PipeWireStream> {
-    // 1. Request ScreenCast stream
-    // 2. Return node ID to client
-    // 3. Client receives frames via PipeWire
-}
-```
-
-**Dependency:** `pipewire = "0.8"`
-
-### 4.3 Consent Dialogs
-
-Before granting input access:
-```
-┌─────────────────────────────────────────┐
-│  "RustDesk" wants to control your       │
-│  keyboard and mouse.                    │
-│                                         │
-│  [Deny]  [Allow Once]  [Always Allow]   │
-└─────────────────────────────────────────┘
-```
-
-### 4.4 EIS (Emulated Input Server)
-
-```rust
-// Modern Wayland input injection
-async fn connect_to_eis(&self, session: &Session) -> Result<OwnedFd> {
-    // Return libei socket for input injection
-}
-```
-
-See `docs/EVOLUTION.md` for full technical details.
-
----
-
-## Phase 4: Upstream Integration
-
-### Objective
-Contribute ionChannel to COSMIC upstream repositories.
-
-### Target Repositories
-
-| Repo | Contribution | PR Template |
-|------|-------------|-------------|
-| `pop-os/xdg-desktop-portal-cosmic` | `ion-portal` → `remote_desktop.rs` | `docs/upstream-prs/PORTAL_COSMIC_PR.md` |
-| `pop-os/cosmic-comp` | `ion-compositor` → `virtual_input.rs` | `docs/upstream-prs/COSMIC_COMP_PR.md` |
-
-### Steps
-
-1. **Engage System76**
-   - Join https://chat.pop-os.org/
-   - Reference issue: https://github.com/pop-os/cosmic-comp/issues/980
-   - Share ionChannel approach
-
-2. **Fork Repositories**
+1. **Push to GitHub**
    ```bash
-   ./scripts/setup-upstream.sh
+   gh repo create DataScienceBioLab/ionChannel --public
+   git push -u origin main
    ```
 
-3. **Integrate ion-portal**
-   - Copy patterns to `xdg-desktop-portal-cosmic`
-   - Add device selection dialog
-   - Register D-Bus interface
+2. **Post Issue**
+   - Target: `pop-os/xdg-desktop-portal-cosmic`
+   - Content: See `docs/upstream-prs/COSMIC_ISSUE_DRAFT.md`
 
-4. **Integrate ion-compositor**
-   - Implement `VirtualInputSink` for cosmic-comp State
-   - Add D-Bus service
-   - Wire into event loop
-
-5. **Submit PRs**
-   - Portal first (depends on compositor)
-   - Compositor second
-   - Coordinate with System76 review
+3. **Engage Community**
+   - COSMIC chat: https://chat.pop-os.org/
+   - Discuss EIS vs direct Smithay integration
 
 ---
 
 ## Phase 5: RustDesk Validation
 
-### Objective
-Verify RustDesk works with ionChannel portal implementation.
-
 ### Test Matrix
 
 | Test | Method | Expected |
 |------|--------|----------|
-| Screen visible | ScreenCast portal | ✅ Already works |
+| Screen visible | ScreenCast | ✅ Already works |
 | Mouse movement | `NotifyPointerMotion` | Cursor moves |
 | Mouse clicks | `NotifyPointerButton` | Clicks register |
 | Keyboard input | `NotifyKeyboardKeycode` | Text appears |
 | Scroll | `NotifyPointerAxis` | Scrolling works |
-| Multi-monitor | `NotifyPointerMotionAbsolute` | Correct screen |
 
 ### Debug Commands
 
@@ -145,100 +77,57 @@ Verify RustDesk works with ionChannel portal implementation.
 # Monitor portal D-Bus
 busctl monitor org.freedesktop.portal.Desktop
 
-# Check portal availability
-cargo run --bin portal-test -- check
-
 # Test with RustDesk
-rustdesk --server  # On COSMIC machine
+rustdesk --server   # On COSMIC machine
 rustdesk --connect <ID>  # From client
 ```
 
 ---
 
-## Phase 6: Pre-Login RDP
+## Phase 6: Pre-Login RDP (Future)
 
-### Objective
-Enable RDP access at the login screen (cosmic-greeter).
-
-### Architecture
+Enable RDP access at the login screen via cosmic-greeter.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    cosmic-remote-greeter                    │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐    ┌─────────────────────────────┐     │
-│  │    IronRDP      │    │   cosmic-greeter-daemon     │     │
-│  │    Server       │◄──►│   (PAM authentication)      │     │
-│  └────────┬────────┘    └─────────────────────────────┘     │
-│           │                                                 │
-│           │  RDP protocol                                   │
-│           ▼                                                 │
-│    ┌─────────────┐                                          │
-│    │ RDP Client  │                                          │
-│    │ (external)  │                                          │
-│    └─────────────┘                                          │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Security Requirements
-
-- TLS encryption required
-- Certificate management
-- Rate limiting on auth
-- Audit logging
-- Optional IP allowlisting
-
-### Systemd Service
-
-```ini
-[Unit]
-Description=ionChannel Pre-Login RDP
-Before=cosmic-greeter.service
-After=network-online.target
-
-[Service]
-Type=notify
-ExecStart=/usr/bin/cosmic-remote-greeter
-Restart=always
-
-[Install]
-WantedBy=graphical.target
+┌──────────────────────────────────────────┐
+│         cosmic-remote-greeter            │
+│  ┌────────────┐   ┌──────────────────┐   │
+│  │  IronRDP   │◄─►│ cosmic-greeter   │   │
+│  │  Server    │   │ (PAM auth)       │   │
+│  └────────────┘   └──────────────────┘   │
+└──────────────────────────────────────────┘
 ```
 
 ---
 
 ## Success Criteria
 
-### MVP (Phases 4-5)
-- [ ] Portal merged to xdg-desktop-portal-cosmic
-- [ ] Compositor merged to cosmic-comp
-- [ ] RustDesk can connect and control COSMIC
-- [ ] No X11 fallback needed
+### MVP
+- [ ] Issue posted to xdg-desktop-portal-cosmic
+- [ ] PRs submitted and reviewed
+- [ ] RustDesk can control COSMIC desktop
 
-### Complete (All Phases)
+### Complete
 - [ ] All MVP criteria
-- [ ] Pre-login RDP works
-- [ ] Native RDP client support
-- [ ] Full multi-monitor support
+- [ ] Pre-login RDP functional
+- [ ] Multi-monitor support
 - [ ] Clipboard sync
 
 ---
 
-## Timeline Estimate
+## Timeline
 
 | Phase | Effort | Dependencies |
 |-------|--------|--------------|
-| 4. Upstream Integration | 2-3 weeks | System76 review |
-| 5. RustDesk Validation | 1 week | Phase 4 |
-| 6. Pre-Login RDP | 3-4 weeks | Phase 5 |
-
-**Total estimated**: 6-8 weeks to complete
+| 4. Upstream | 2-3 weeks | System76 review |
+| 5. RustDesk | 1 week | Phase 4 merged |
+| 6. Pre-Login | 3-4 weeks | Phase 5 |
 
 ---
 
 ## Resources
 
 - **COSMIC Chat**: https://chat.pop-os.org/
-- **Related Issue**: https://github.com/pop-os/cosmic-comp/issues/980
 - **Portal Spec**: https://flatpak.github.io/xdg-desktop-portal/
-- **RustDesk**: https://github.com/rustdesk/rustdesk
+- **libei/EIS**: https://gitlab.freedesktop.org/libinput/libei
+- **reis crate**: https://github.com/ids1024/reis

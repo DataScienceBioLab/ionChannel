@@ -14,23 +14,31 @@ A [syntheticChemistry](https://github.com/DataScienceBioLab) project.
 
 ## The Problem
 
-COSMIC implements `ScreenCast` (view screen) but not `RemoteDesktop` (control screen):
+COSMIC implements `ScreenCast` but not `RemoteDesktop`:
 
-| Portal | Status | Result |
+| Portal | Status | Impact |
 |--------|--------|--------|
-| `ScreenCast` | ✅ Implemented | RustDesk can see screen |
-| `RemoteDesktop` | ❌ Missing | RustDesk can't control |
+| `ScreenCast` | ✅ Available | View screen works |
+| `RemoteDesktop` | ❌ Missing | **Can't control screen** |
+
+**Result:** RustDesk can see COSMIC desktops but can't inject mouse/keyboard.
 
 ## The Solution
+
+```
+RustDesk ──► ion-portal ──► ion-compositor ──► COSMIC Desktop
+              (D-Bus)         (EIS/Smithay)
+```
 
 Four Rust crates implementing the missing infrastructure:
 
 ```
 ionChannel/crates/
-├── ion-core/        # Shared types, sessions, events
-├── ion-portal/      # Portal D-Bus interface
-├── ion-compositor/  # Compositor input injection
-└── portal-test-client/  # Diagnostic CLI
+├── ion-core/           # Shared types, sessions, events
+├── ion-portal/         # Portal D-Bus interface  
+├── ion-compositor/     # Compositor input injection
+├── ion-test-substrate/ # Headless validation
+└── portal-test-client/ # Diagnostic CLI
 ```
 
 ## Quick Start
@@ -39,24 +47,25 @@ ionChannel/crates/
 git clone https://github.com/DataScienceBioLab/ionChannel.git
 cd ionChannel
 
-make build   # Build all crates
-make test    # Run 30 tests
-make demo    # Run integration demo
+cargo build --release    # Build all crates
+cargo test --workspace   # Run tests
+cargo run -p ion-test-substrate  # Validate implementation
 ```
 
-## Architecture
+## Validation Results
 
 ```
-RustDesk Client
-      │
-      ▼
-xdg-desktop-portal-cosmic  ◄── ion-portal
-      │
-      ▼
-cosmic-comp  ◄── ion-compositor
-      │
-      ▼
-Your Desktop
+╔══════════════════════════════════════════════════════════════╗
+║               ionChannel Validation Report                   ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ interface_registered                                       ║
+║ ✓ device_type_keyboard                                       ║
+║ ✓ device_type_pointer                                        ║
+║ ✓ events_captured                                            ║
+╠══════════════════════════════════════════════════════════════╣
+║ Total: 4  Passed: 4  Failed: 0                               ║
+║ ✓ ALL CHECKS PASSED                                          ║
+╚══════════════════════════════════════════════════════════════╝
 ```
 
 ## Crates
@@ -85,24 +94,16 @@ let portal = RemoteDesktopPortal::new(manager);
 
 ### ion-compositor
 
-Input injection for Smithay compositors:
+Input injection for Smithay/cosmic-comp:
 
 ```rust
 use ion_compositor::{VirtualInput, VirtualInputSink};
 
-impl VirtualInputSink for MyState {
+impl VirtualInputSink for CosmicState {
     fn inject_pointer_motion(&mut self, dx: f64, dy: f64) {
         self.pointer.motion(dx, dy);
     }
 }
-```
-
-## Development
-
-```bash
-make help        # Show all commands
-make ci          # Run full CI check
-make portal-check  # Test portal availability
 ```
 
 ## Status
@@ -110,23 +111,34 @@ make portal-check  # Test portal availability
 | Component | Status |
 |-----------|--------|
 | Core crates | ✅ Complete |
-| Tests (30) | ✅ Passing |
+| Test substrate | ✅ Passing |
+| COSMIC VM validated | ✅ Confirmed missing portal |
 | Documentation | ✅ Complete |
-| Upstream PRs | 🔲 Next |
+| Upstream PRs | 🔲 Ready to submit |
+
+## Development
+
+```bash
+make help          # Show all commands
+make ci            # Run full CI check
+make portal-check  # Test portal availability (on COSMIC)
+```
+
+See [docs/TESTING.md](docs/TESTING.md) for VM setup and testing details.
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 **Upstream targets:**
-- `pop-os/xdg-desktop-portal-cosmic`
-- `pop-os/cosmic-comp`
+- [`pop-os/xdg-desktop-portal-cosmic`](https://github.com/pop-os/xdg-desktop-portal-cosmic)
+- [`pop-os/cosmic-comp`](https://github.com/pop-os/cosmic-comp)
 
 ## License
 
 **AGPL-3.0** with System76 exception — see [LICENSE.md](LICENSE.md)
 
-System76 may use under GPL-3.0 in COSMIC. Everyone else: AGPL-3.0.
+System76 may use under GPL-3.0 for COSMIC integration.
 
 ---
 
