@@ -24,7 +24,7 @@ bitflags = "2.4"
 zvariant.workspace = true
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["rt", "macros"] }
+tokio = { workspace = true, features = ["rt", "macros", "time"] }
 
 [lints]
 workspace = true
