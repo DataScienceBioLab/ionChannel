@@ -5,51 +5,29 @@
 ```bash
 git clone https://github.com/DataScienceBioLab/ionChannel.git
 cd ionChannel
-make build
-make test
+cargo build
+cargo test
 ```
 
-## Development Commands
+## Development
 
 ```bash
+make help       # Show all commands
 make build      # Build all crates
 make test       # Run tests
-make clippy     # Run lints
-make fmt        # Format code
+make clippy     # Lints
+make fmt        # Format
 make ci         # Full CI check
-make demo       # Run integration demo
 ```
 
 ## Code Style
 
-- **Rust 1.75+** with modern async patterns
-- `#![forbid(unsafe_code)]` — no unsafe
+- Rust 1.75+ with async patterns
+- `#![forbid(unsafe_code)]` in core crates
 - Documented public APIs
 - Tests for all functionality
 
-```rust
-// Good: Type-safe, documented, tested
-pub async fn create_session(&self, id: SessionId) -> Result<SessionHandle> {
-    // ...
-}
-```
-
-## Testing
-
-```bash
-make test           # All tests
-cargo test -p ion-core  # Single crate
-cargo test -- --nocapture  # With output
-```
-
-## Pull Requests
-
-1. Fork and create a branch
-2. Run `make ci` before committing
-3. Write clear commit messages
-4. Submit PR with description
-
-### Commit Format
+## Commit Format
 
 ```
 component: short description
@@ -58,23 +36,29 @@ Longer explanation if needed.
 ```
 
 Examples:
-- `ion-core: add TouchDown event`
-- `ion-portal: implement SelectDevices`
+- `ion-core: add RemoteDesktopMode enum`
+- `ion-compositor: implement ShmCapture`
+
+## Pull Requests
+
+1. Fork and branch
+2. Run `make ci`
+3. Submit PR with description
 
 ## Upstream Contribution
 
-ionChannel is designed for upstream contribution to COSMIC:
+ionChannel targets COSMIC:
 
 | Repo | Contribution |
 |------|-------------|
-| `xdg-desktop-portal-cosmic` | ion-portal |
+| `xdg-desktop-portal-cosmic` | ion-portal + capture |
 | `cosmic-comp` | ion-compositor |
 
 ### Before Submitting to COSMIC
 
-1. **Discuss first** — Join https://chat.pop-os.org/
-2. **Match style** — Follow COSMIC code patterns
-3. **Use GPL-3.0** — Required for COSMIC repos
+1. Discuss first at https://chat.pop-os.org/
+2. Match COSMIC code style
+3. Use GPL-3.0 (System76 exception applies)
 
 ### PR Templates
 
@@ -82,8 +66,8 @@ See `docs/upstream-prs/` for ready-to-use templates.
 
 ## Questions?
 
-- **Issues**: Bugs and features
-- **COSMIC Chat**: https://chat.pop-os.org/
+- Issues: Bugs and features
+- COSMIC Chat: https://chat.pop-os.org/
 
 ---
 

@@ -7,207 +7,113 @@
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 0 | Research & Specifications | ✅ Complete |
-| 1 | Core Crates (ion-core, ion-portal, ion-compositor) | ✅ Complete |
+| 1 | Core Crates | ✅ Complete |
 | 2 | Test Substrate | ✅ Complete |
 | 3 | COSMIC VM Validation | ✅ Complete |
-| **4** | **Gap Discovery: VM/Cloud broken** | ✅ **Identified** |
-| 5 | Tiered Capture (wl_shm, CPU fallback) | 🔄 In Progress |
-| 6 | Input-Only Mode | 🔲 Planned |
-| 7 | Upstream Integration | 🔲 After fallbacks |
-| 8 | RustDesk Validation | 🔲 Pending |
+| 4 | Gap Discovery (VM/cloud broken) | ✅ Identified |
+| 5 | Tiered Capture | ✅ Complete |
+| 6 | Input-Only Mode | ✅ Complete |
+| **7** | **Upstream Submission** | 🔄 **Ready** |
+| 8 | RustDesk Validation | 🔲 After merge |
 
 ---
 
-## Phase 4: Gap Discovery ✅
+## Phase 7: Upstream Submission 🔄
 
-### What We Found
+### Deliverables Ready
 
-Testing in QEMU VM revealed a critical issue:
+| Document | Location |
+|----------|----------|
+| Portal PR template | `docs/upstream-prs/PORTAL_PR.md` |
+| Compositor PR template | `docs/upstream-prs/COMPOSITOR_PR.md` |
+| System76 message | `docs/upstream-prs/SYSTEM76_MESSAGE.md` |
 
-```
-xdg-desktop-portal-cosmic crashes:
-  panicked at src/wayland/mod.rs:240:78
-  called `Result::unwrap()` on an `Err` value: NotPresent
-  
-Root cause: zwp_linux_dmabuf_v1 v4 not supported by virtio-gpu
-```
+### Next Steps
 
-### Affected Scenarios
+1. **Push to GitHub**
+   ```bash
+   gh repo create DataScienceBioLab/ionChannel --public
+   git push -u origin master
+   ```
 
-| Environment | GPU Type | dmabuf Support | Current Status |
-|-------------|----------|----------------|----------------|
-| Bare metal | Real GPU | ✅ Yes | Works (once portal exists) |
-| QEMU/KVM | virtio-gpu | ❌ No | **Crashes** |
-| VirtualBox | VBoxVGA | ❌ No | **Crashes** |
-| AWS/GCP | Virtual | ❌ No | **Crashes** |
-| Docker/LXC | None | ❌ No | **Crashes** |
-| Headless | None | ❌ No | **Crashes** |
+2. **Engage System76**
+   - Post message to https://chat.pop-os.org/
+   - Reference issue: https://github.com/pop-os/cosmic-comp/issues/980
 
-### Impact
-
-This breaks:
-- Server administration via remote desktop
-- Cloud/VDI deployments
-- Development and testing workflows
-- Multi-VM management
-- CI/CD visual testing
-
-### Our Response
-
-ionChannel will implement **graceful degradation** instead of crashing.
+3. **Submit PRs**
+   - `xdg-desktop-portal-cosmic`: RemoteDesktop interface + tiered capture
+   - `cosmic-comp`: VirtualInputSink + EIS integration
 
 ---
 
-## Phase 5: Tiered Capture 🔄
+## Completed Phases
 
-### Objective
+### Phase 5: Tiered Capture ✅
 
-Implement fallback capture methods when dmabuf unavailable.
-
-### Implementation Plan
+Implemented graceful degradation for screen capture:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Capture Tier Selection                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   Start                                                         │
-│     │                                                           │
-│     ▼                                                           │
-│   [Check dmabuf v4+] ──Yes──► Tier 1: DmabufCapture            │
-│     │                                                           │
-│     No                                                          │
-│     │                                                           │
-│     ▼                                                           │
-│   [Check wl_shm] ──Yes──► Tier 2: ShmCapture                   │
-│     │                                                           │
-│     No                                                          │
-│     │                                                           │
-│     ▼                                                           │
-│   Tier 3: CpuCapture (always available)                        │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+Tier 1: DmabufCapture  → GPU zero-copy (best)
+Tier 2: ShmCapture     → Shared memory (VMs)
+Tier 3: CpuCapture     → CPU fallback (universal)
 ```
 
-### Tasks
-
-- [ ] Create `ion-compositor/src/capture/mod.rs` with `ScreenCapture` trait
-- [ ] Implement `DmabufCapture` (existing COSMIC approach)
-- [ ] Implement `ShmCapture` using `wl_shm` and screencopy
-- [ ] Implement `CpuCapture` as universal fallback
-- [ ] Add tier auto-detection in portal startup
-- [ ] Add capability reporting to D-Bus interface
-- [ ] Test each tier in appropriate environment
-
-### New Files
-
+**Files created:**
 ```
 ion-compositor/src/capture/
-├── mod.rs          # ScreenCapture trait, tier selection
-├── dmabuf.rs       # Tier 1: GPU zero-copy
-├── shm.rs          # Tier 2: Shared memory
-└── cpu.rs          # Tier 3: CPU fallback
+├── mod.rs      # ScreenCapture trait
+├── dmabuf.rs   # Tier 1
+├── shm.rs      # Tier 2
+├── cpu.rs      # Tier 3
+├── frame.rs    # Frame types
+└── tier.rs     # TierSelector
 ```
 
----
+### Phase 6: Input-Only Mode ✅
 
-## Phase 6: Input-Only Mode
-
-### Objective
-
-Allow input injection even when screen capture fails entirely.
-
-### Use Cases
-
-- Blind remote control (user has physical monitor)
-- Accessibility scenarios
-- Automated testing (input without visual feedback)
-- Emergency server access
-
-### Implementation
+Implemented `RemoteDesktopMode` for graceful capability reporting:
 
 ```rust
 pub enum RemoteDesktopMode {
-    /// Full: screen capture + input
-    Full { capture: Box<dyn ScreenCapture> },
-    /// Input only: no screen, but keyboard/mouse work
-    InputOnly,
-}
-
-impl RemoteDesktopPortal {
-    pub async fn start(&self, session: &Session) -> Result<RemoteDesktopMode> {
-        match self.try_screen_capture().await {
-            Ok(capture) => Ok(RemoteDesktopMode::Full { capture }),
-            Err(e) => {
-                warn!("Screen capture unavailable: {e}, falling back to input-only");
-                Ok(RemoteDesktopMode::InputOnly)
-            }
-        }
-    }
+    Full,      // Screen + input
+    ViewOnly,  // Screen only
+    InputOnly, // Input only (no screen capture)
+    None,      // Nothing available
 }
 ```
 
-### Tasks
+**Files created:**
+```
+ion-core/src/mode.rs          # RemoteDesktopMode, SessionCapabilities
+ion-compositor/src/capabilities.rs  # CapabilityProvider
+```
 
-- [ ] Define `RemoteDesktopMode` enum
-- [ ] Modify `Start` to return mode in results
-- [ ] Ensure input methods work without capture
-- [ ] Add mode reporting to session info
-- [ ] Document input-only limitations
+### Phase 4: Gap Discovery ✅
 
----
+**Finding:** COSMIC portal crashes in VMs due to `zwp_linux_dmabuf_v1` v4 requirement.
 
-## Phase 7: Upstream Integration
+**Impact:** Breaks VMs, cloud, VDI, containers, headless servers.
 
-### Strategy Change
-
-Original plan: Submit PR immediately after scaffold.
-
-New plan: **Submit after fallbacks work**, demonstrating robustness.
-
-### Value Proposition to System76
-
-> "ionChannel doesn't just add RemoteDesktop — it adds *robust* RemoteDesktop
-> that works in VMs, cloud, and degraded environments where current approaches fail."
-
-### PR Scope
-
-1. **xdg-desktop-portal-cosmic**
-   - `remote_desktop.rs` with tiered capture
-   - Graceful degradation, never crashes
-   - Full test coverage
-
-2. **cosmic-comp**
-   - EIS integration for input injection
-   - `VirtualInputSink` implementation
-
-### Timeline
-
-| Milestone | Target |
-|-----------|--------|
-| Tiered capture complete | +2 weeks |
-| Input-only mode | +1 week |
-| PR drafts ready | +1 week |
-| Submit to System76 | +1 week after testing |
+**Response:** Tiered capture architecture (Phases 5-6).
 
 ---
 
-## Phase 8: RustDesk Validation
+## Phase 8: RustDesk Validation (Future)
 
-### Test Environments
+### Test Matrix
 
-| Environment | Capture Tier | Input | Expected Result |
-|-------------|--------------|-------|-----------------|
-| Bare metal COSMIC | dmabuf | ✅ | Full functionality |
-| QEMU VM | wl_shm | ✅ | Good performance |
-| Headless | CPU/None | ✅ | Input works |
+| Environment | Tier | Input | Expected |
+|-------------|------|-------|----------|
+| Bare metal COSMIC | dmabuf | ✅ | Full 60fps |
+| QEMU VM | shm | ✅ | 30fps |
+| Headless | cpu/none | ✅ | Input works |
 
 ### Success Criteria
 
 - [ ] RustDesk connects to all environments
 - [ ] Screen visible where capture available
-- [ ] Mouse/keyboard works in all cases
-- [ ] No crashes regardless of environment
+- [ ] Input works everywhere
+- [ ] No crashes
 
 ---
 
@@ -234,14 +140,7 @@ Enable RDP at cosmic-greeter login screen.
 | Portal Spec | https://flatpak.github.io/xdg-desktop-portal/ |
 | libei/EIS | https://gitlab.freedesktop.org/libinput/libei |
 | reis crate | https://github.com/ids1024/reis |
-| wl_shm spec | https://wayland.freedesktop.org/docs/html/apa.html#protocol-spec-wl_shm |
 
 ---
 
-## Progress Tracking
-
-See [PROGRESS.md](PROGRESS.md) for detailed task tracking.
-
----
-
-*ionChannel Roadmap v2.0 — December 2024*
+*ionChannel Roadmap v3.0 — December 2024*

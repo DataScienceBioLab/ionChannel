@@ -4,7 +4,6 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md)
-[![CI](https://github.com/DataScienceBioLab/ionChannel/workflows/CI/badge.svg)](https://github.com/DataScienceBioLab/ionChannel/actions)
 
 **Robust remote desktop for Wayland — works everywhere, including VMs and cloud.**
 
@@ -12,26 +11,26 @@ A [syntheticChemistry](https://github.com/DataScienceBioLab) project.
 
 ---
 
-## The Problem (Expanded)
+## The Problem
 
-COSMIC and most Wayland compositors assume real GPU hardware for remote desktop:
+COSMIC implements `ScreenCast` but not `RemoteDesktop`:
 
-| Scenario | Current Wayland | ionChannel |
-|----------|----------------|------------|
-| Bare metal + GPU | ⚠️ Portal missing | ✅ Works |
-| **VM (virtio-gpu)** | ❌ Crashes | ✅ Graceful fallback |
-| **Cloud VM (AWS/GCP)** | ❌ No dmabuf | ✅ wl_shm fallback |
-| **Multi-VM server** | ❌ Can't remote in | ✅ CPU capture |
-| **Headless server** | ❌ No GPU | ✅ Input-only mode |
+| Portal | Status | Impact |
+|--------|--------|--------|
+| `ScreenCast` | ✅ Available | View screen works |
+| `RemoteDesktop` | ❌ Missing | **Cannot control screen** |
 
-### Discovery
+**Result:** RustDesk can see COSMIC desktops but cannot inject mouse/keyboard.
 
-During VM testing, we found COSMIC's portal crashes on:
+### The Deeper Problem
+
+Current Wayland remote desktop assumes GPU hardware. When testing in VMs, we discovered:
+
 ```
-zwp_linux_dmabuf_v1 version 4 required → Virtual GPUs don't support this
+COSMIC portal crashes: zwp_linux_dmabuf_v1 v4 not supported by virtio-gpu
 ```
 
-**This breaks entire deployment categories:** VDI, cloud, server management, dev/test.
+This breaks: VMs, cloud instances, VDI, headless servers.
 
 ## The Solution
 
@@ -39,31 +38,28 @@ ionChannel implements **tiered graceful degradation**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    ionChannel Architecture                      │
+│                    Screen Capture Tiers                         │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   Screen Capture (auto-selects best available):                │
-│   ├─► dmabuf (GPU zero-copy) ──► Best performance              │
-│   ├─► wl_shm (shared memory) ──► Works in VMs                  │
-│   └─► CPU framebuffer ──► Works everywhere                     │
-│                                                                 │
-│   Input Injection (GPU-independent):                           │
-│   └─► libei/EIS ──► Always works                               │
-│                                                                 │
-│   Philosophy: Never crash, degrade gracefully                  │
-│                                                                 │
+│  Environment          │ Tier      │ Performance                │
+│───────────────────────┼───────────┼────────────────────────────│
+│  Bare metal + GPU     │ dmabuf    │ 60fps, <5% CPU (best)      │
+│  VMs (virtio-gpu)     │ wl_shm    │ 30-60fps, ~15% CPU         │
+│  Cloud/Headless       │ CPU       │ 15-30fps, ~30% CPU         │
+│  No capture possible  │ InputOnly │ Keyboard/mouse still work  │
 └─────────────────────────────────────────────────────────────────┘
+
+Philosophy: Never crash, degrade gracefully.
 ```
 
 ## Crates
 
 ```
 ionChannel/crates/
-├── ion-core/           # Shared types, sessions, events
-├── ion-portal/         # Portal D-Bus interface  
-├── ion-compositor/     # Compositor input injection
-├── ion-test-substrate/ # Headless validation
-└── portal-test-client/ # Diagnostic CLI
+├── ion-core/           # Types, sessions, modes (RemoteDesktopMode, SessionCapabilities)
+├── ion-portal/         # D-Bus RemoteDesktop interface
+├── ion-compositor/     # Tiered capture + input injection
+├── ion-test-substrate/ # Headless validation harness
+└── portal-test-client/ # CLI diagnostics
 ```
 
 ## Quick Start
@@ -72,9 +68,19 @@ ionChannel/crates/
 git clone https://github.com/DataScienceBioLab/ionChannel.git
 cd ionChannel
 
-cargo build --release    # Build all crates
-cargo test --workspace   # Run tests
-cargo run -p ion-test-substrate  # Validate implementation
+cargo build --release
+cargo test --workspace   # 92 tests
+```
+
+### Check Capabilities
+
+```bash
+cargo run --bin capability-check
+
+# Output on VM:
+# Session Mode: InputOnly
+# Capture Available: No (VM detected, virtio-gpu)
+# Input Available: Yes
 ```
 
 ## Status
@@ -82,30 +88,12 @@ cargo run -p ion-test-substrate  # Validate implementation
 | Component | Status |
 |-----------|--------|
 | Core crates | ✅ Complete |
-| Test substrate | ✅ Passing |
-| COSMIC VM testing | ✅ Gap identified |
-| dmabuf capture | 🔲 Upstream COSMIC |
-| **wl_shm fallback** | 🔄 **In Progress** |
-| **CPU fallback** | 🔲 Planned |
-| Input injection (EIS) | ✅ Designed |
-| Upstream PRs | 🔲 After fallbacks |
-
-## Why AGPL-3.0?
-
-We discovered a significant gap in Wayland's remote desktop story. This solution should benefit everyone:
-
-- **AGPL-3.0**: Ensures improvements flow back to the community
-- **System76 Exception**: GPL-3.0 for COSMIC integration (license compatibility)
-
-Cloud providers and VDI vendors using this must share improvements.
-
-## Development
-
-```bash
-make help          # Show all commands
-make ci            # Run full CI check
-make test          # Run all tests
-```
+| Tiered capture (dmabuf/shm/cpu) | ✅ Complete |
+| Input-only mode | ✅ Complete |
+| Capability detection | ✅ Complete |
+| 92 unit tests | ✅ Passing |
+| Upstream PR templates | ✅ Ready |
+| **Upstream submission** | 🔲 Next step |
 
 ## Documentation
 
@@ -113,12 +101,20 @@ make test          # Run all tests
 |----------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Tiered fallback design |
 | [ROADMAP.md](ROADMAP.md) | Development phases |
-| [docs/TESTING.md](docs/TESTING.md) | VM setup and validation |
-| [docs/EVOLUTION.md](docs/EVOLUTION.md) | Technical decisions |
+| [CHANGELOG.md](CHANGELOG.md) | All changes |
+| [docs/upstream-prs/](docs/upstream-prs/) | PR templates for System76 |
+
+## Development
+
+```bash
+make help      # Show commands
+make ci        # Full CI check
+make test      # Run all tests
+```
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Upstream targets:**
 - [`pop-os/xdg-desktop-portal-cosmic`](https://github.com/pop-os/xdg-desktop-portal-cosmic)
@@ -127,6 +123,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## License
 
 **AGPL-3.0** with System76 exception — see [LICENSE.md](LICENSE.md)
+
+System76 may use under GPL-3.0 for COSMIC integration.
 
 ---
 

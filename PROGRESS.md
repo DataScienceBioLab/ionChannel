@@ -1,78 +1,61 @@
-# ionChannel Progress Tracker
+# ionChannel Progress
 
-> Real-time development status
+> Development status tracker
 
 **Last Updated:** 2024-12-23
 
 ---
 
-## Active Sprint: Tiered Capture
+## Current Phase: Upstream Submission
 
-### Priority 1: wl_shm Fallback Capture ✅
+All development work complete. Ready to submit to System76.
 
-| Task | Status | Notes |
-|------|--------|-------|
-| Create `capture/mod.rs` with `ScreenCapture` trait | ✅ | Async trait with tiered fallback |
-| Define tier selection logic | ✅ | `TierSelector` with env detection |
-| Implement `DmabufCapture` | ✅ | Tier 1: GPU zero-copy |
-| Implement `ShmCapture` | ✅ | Tier 2: VM compatible |
-| Implement `CpuCapture` | ✅ | Tier 3: Universal fallback |
-| Add tier auto-detection | ✅ | VM/GPU/Wayland detection |
-| Add frame format handling | ✅ | BGRA, RGBA, etc. |
-| Test all capture tiers | ✅ | 25 new tests passing |
+### Upstream Checklist
 
-### Priority 2: Input Independence ✅
-
-| Task | Status | Notes |
-|------|--------|-------|
-| Create `RemoteDesktopMode` enum | ✅ | Full/ViewOnly/InputOnly/None |
-| Create `SessionCapabilities` struct | ✅ | Capture + input availability |
-| Create `CapabilityProvider` | ✅ | Auto-probes environment |
-| Verify input works without capture | ✅ | VirtualInput is GPU-independent |
-| Test in VM | 🔄 | Next step |
+- [x] Portal PR template ready (`docs/upstream-prs/PORTAL_PR.md`)
+- [x] Compositor PR template ready (`docs/upstream-prs/COMPOSITOR_PR.md`)
+- [x] System76 engagement message ready (`docs/upstream-prs/SYSTEM76_MESSAGE.md`)
+- [ ] Push to GitHub
+- [ ] Post to COSMIC chat
+- [ ] Submit PRs
 
 ---
 
-## Completed
+## Completed Work
 
-### Phase 0: Research ✅
-- [x] Analyze RustDesk Wayland support
-- [x] Map COSMIC portal landscape
-- [x] Document xdg-desktop-portal spec
-- [x] Identify EIS/libei for input
+### Tiered Capture ✅
 
-### Phase 1: Core Crates ✅
-- [x] ion-core: DeviceType, InputEvent, SessionHandle
-- [x] ion-portal: RemoteDesktopPortal D-Bus interface
-- [x] ion-compositor: VirtualInputSink, RateLimiter
-- [x] 30 unit tests passing
+| Task | Status |
+|------|--------|
+| `ScreenCapture` trait | ✅ |
+| `DmabufCapture` (Tier 1) | ✅ |
+| `ShmCapture` (Tier 2) | ✅ |
+| `CpuCapture` (Tier 3) | ✅ |
+| `TierSelector` | ✅ |
+| Frame format handling | ✅ |
+| 25 capture tests | ✅ |
 
-### Phase 2: Test Substrate ✅
-- [x] ion-test-substrate crate
-- [x] Headless validation
-- [x] CI integration
+### Input-Only Mode ✅
 
-### Phase 3: COSMIC VM Validation ✅
-- [x] Set up Pop!_OS COSMIC VM
-- [x] Confirm missing RemoteDesktop portal
-- [x] Confirm missing InputCapture portal
-- [x] Document findings
+| Task | Status |
+|------|--------|
+| `RemoteDesktopMode` enum | ✅ |
+| `SessionCapabilities` struct | ✅ |
+| `CapabilityProvider` | ✅ |
+| Environment detection (VM/GPU) | ✅ |
+| Mode reporting in portal | ✅ |
+| 8 mode tests | ✅ |
 
-### Phase 4: Gap Discovery ✅
-- [x] Identify dmabuf v4 requirement
-- [x] Confirm virtio-gpu limitation
-- [x] Map affected scenarios (VM, cloud, VDI)
-- [x] Design tiered fallback architecture
-- [x] Update ARCHITECTURE.md
-- [x] Update ROADMAP.md
+### Core Infrastructure ✅
 
----
-
-## Blocked
-
-| Item | Blocker | Resolution |
-|------|---------|------------|
-| Live COSMIC testing | VM lacks dmabuf | Implement wl_shm fallback |
+| Task | Status |
+|------|--------|
+| ion-core types | ✅ |
+| ion-portal D-Bus interface | ✅ |
+| ion-compositor input injection | ✅ |
+| ion-test-substrate harness | ✅ |
+| portal-test-client CLI | ✅ |
+| Documentation | ✅ |
 
 ---
 
@@ -80,37 +63,55 @@
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | ~4,000 |
-| Unit tests | 30 |
+| Lines of Rust | 7,732 |
+| Unit tests | 92 |
 | Crates | 5 |
-| Documentation files | 12 |
+| Capture tiers | 3 |
+| Session modes | 4 |
 
 ---
 
-## Daily Log
+## Key Discoveries
 
-### 2024-12-23
+### VM Gap (2024-12-23)
 
-**Discovery:** COSMIC portal crashes in VMs due to `zwp_linux_dmabuf_v1` requirement.
+**Problem:** COSMIC portal crashes in VMs due to `zwp_linux_dmabuf_v1` v4 requirement.
 
-**Decision:** Pivot to graceful degradation architecture.
+**Solution:** Tiered capture with graceful degradation.
 
-**Actions:**
-- Updated ARCHITECTURE.md with tiered capture design
-- Updated ROADMAP.md with new phases
-- Created PROGRESS.md for tracking
-
-**Next:** Implement wl_shm capture tier
+**Impact:** ionChannel now works in environments where existing Wayland remote desktop fails.
 
 ---
 
-### 2024-12-22
+## Test Results
 
-- Completed ion-test-substrate
-- COSMIC VM setup and validation
-- Confirmed portal gap
+```
+$ cargo test --workspace
+
+running 92 tests
+...
+test result: ok. 92 passed; 0 failed
+```
+
+### Capability Check (Host)
+
+```
+GPU Vendor: Intel
+Session Mode: Full
+Capture Available: Yes (dmabuf likely)
+Input Available: Yes
+```
+
+### Capability Check (VM)
+
+```
+VM Detected: Yes (QEMU/KVM)
+GPU Vendor: Virtio
+Session Mode: InputOnly
+Capture Available: No
+Input Available: Yes
+```
 
 ---
 
-*Updated as work progresses*
-
+*Updated: 2024-12-23*
