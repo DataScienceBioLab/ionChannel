@@ -240,30 +240,33 @@ mod tests {
 
     #[tokio::test]
     async fn rate_limiter_blocks_burst() {
+        // Use a very long window to prevent burst reset during slow test execution
         let limiter = RateLimiter::new(RateLimiterConfig {
             max_events_per_sec: 1000,
             burst_limit: 5,
-            window: Duration::from_secs(1),
+            window: Duration::from_secs(60), // Long window prevents reset
         });
 
         let session = SessionId::new("/test/burst");
 
         // Allow first 5
-        for _ in 0..5 {
-            limiter.check(&session).await.unwrap();
+        for i in 0..5 {
+            let result = limiter.check(&session).await;
+            assert!(result.is_ok(), "Event {} should be allowed", i + 1);
         }
 
         // 6th should be blocked
         let result = limiter.check(&session).await;
-        assert!(result.is_err());
+        assert!(result.is_err(), "6th event should be blocked by burst limit");
     }
 
     #[tokio::test]
     async fn rate_limiter_per_session() {
+        // Use a long window to prevent burst reset during slow test execution
         let limiter = RateLimiter::new(RateLimiterConfig {
             max_events_per_sec: 100,
             burst_limit: 5,
-            window: Duration::from_secs(1),
+            window: Duration::from_secs(60),
         });
 
         let session1 = SessionId::new("/test/1");
@@ -275,8 +278,8 @@ mod tests {
         }
 
         // Session1 blocked, but session2 should still work
-        assert!(limiter.check(&session1).await.is_err());
-        assert!(limiter.check(&session2).await.is_ok());
+        assert!(limiter.check(&session1).await.is_err(), "session1 should be blocked");
+        assert!(limiter.check(&session2).await.is_ok(), "session2 should still work");
     }
 
     #[tokio::test]

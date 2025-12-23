@@ -1,0 +1,26 @@
+# Coverage configuration for ionChannel
+# Run with: cargo tarpaulin
+
+[coverage]
+# Only measure our crates
+packages = ["ion-core", "ion-portal", "ion-compositor", "ion-test-substrate"]
+
+# Exclude upstream repos and examples
+exclude-files = [
+    "upstream/*",
+    "examples/*",
+    "target/*",
+    "tests/integration/*",  # Integration tests are tested separately
+]
+
+# Output formats
+out = ["Html", "Stdout"]
+output-dir = "target/coverage"
+
+# Test settings
+all-features = true
+skip-clean = true
+
+# Fail if coverage drops below target
+# fail-under = 90  # Enable once we reach 90%
+

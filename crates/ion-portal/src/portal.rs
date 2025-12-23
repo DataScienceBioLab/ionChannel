@@ -408,6 +408,17 @@ mod tests {
         (portal, rx)
     }
 
+    fn create_portal_with_mode(
+        mode: RemoteDesktopMode,
+    ) -> (
+        RemoteDesktopPortal,
+        tokio::sync::mpsc::Receiver<(SessionId, InputEvent)>,
+    ) {
+        let (manager, rx) = SessionManager::new(SessionManagerConfig::default());
+        let portal = RemoteDesktopPortal::with_mode(manager, mode);
+        (portal, rx)
+    }
+
     #[tokio::test]
     async fn portal_properties() {
         let (portal, _rx) = create_test_portal();
@@ -419,5 +430,250 @@ mod tests {
     fn portal_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<RemoteDesktopPortal>();
+    }
+
+    #[test]
+    fn portal_new_defaults_to_full_mode() {
+        let (portal, _rx) = create_test_portal();
+        assert_eq!(portal.session_mode(), RemoteDesktopMode::Full);
+    }
+
+    #[test]
+    fn portal_with_mode_sets_mode() {
+        let (portal, _rx) = create_portal_with_mode(RemoteDesktopMode::InputOnly);
+        assert_eq!(portal.session_mode(), RemoteDesktopMode::InputOnly);
+    }
+
+    #[test]
+    fn portal_set_session_mode_updates_mode() {
+        let (mut portal, _rx) = create_test_portal();
+        assert_eq!(portal.session_mode(), RemoteDesktopMode::Full);
+
+        portal.set_session_mode(RemoteDesktopMode::ViewOnly);
+        assert_eq!(portal.session_mode(), RemoteDesktopMode::ViewOnly);
+
+        portal.set_session_mode(RemoteDesktopMode::None);
+        assert_eq!(portal.session_mode(), RemoteDesktopMode::None);
+    }
+
+    #[tokio::test]
+    async fn portal_session_manager_is_accessible() {
+        let (portal, _rx) = create_test_portal();
+        let manager = portal.session_manager();
+        // Verify we can access the manager
+        assert_eq!(manager.session_count().await, 0);
+    }
+
+    #[test]
+    fn response_codes_have_correct_values() {
+        assert_eq!(ResponseCode::Success as u32, 0);
+        assert_eq!(ResponseCode::Cancelled as u32, 1);
+        assert_eq!(ResponseCode::Other as u32, 2);
+    }
+
+    #[test]
+    fn response_codes_are_comparable() {
+        assert_eq!(ResponseCode::Success, ResponseCode::Success);
+        assert_ne!(ResponseCode::Success, ResponseCode::Cancelled);
+    }
+
+    #[tokio::test]
+    async fn session_manager_integration() {
+        let (portal, _rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        // Create a session directly via the manager
+        let session_id = SessionId::new("/test/session/1");
+        manager.create_session(session_id.clone(), "test-app".to_string()).await.unwrap();
+
+        assert_eq!(manager.session_count().await, 1);
+        assert!(manager.get_session(&session_id).await.is_some());
+
+        // Remove the session
+        manager.close_session(&session_id).await;
+        assert_eq!(manager.session_count().await, 0);
+    }
+
+    #[tokio::test]
+    async fn multiple_sessions() {
+        let (portal, _rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        // Create multiple sessions
+        for i in 0..5 {
+            let session_id = SessionId::new(&format!("/test/session/{}", i));
+            manager.create_session(session_id, format!("app-{}", i)).await.unwrap();
+        }
+
+        assert_eq!(manager.session_count().await, 5);
+
+        // Close all
+        manager.close_all().await;
+        assert_eq!(manager.session_count().await, 0);
+    }
+
+    #[tokio::test]
+    async fn session_event_forwarding() {
+        let (portal, mut rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        let session_id = SessionId::new("/test/event/session");
+        let session = manager.create_session(session_id.clone(), "test".to_string()).await.unwrap();
+
+        // Select devices
+        session.select_devices(DeviceType::KEYBOARD | DeviceType::POINTER).await.unwrap();
+
+        // Start session
+        session.start().await.unwrap();
+
+        // Send an event
+        let event = InputEvent::PointerMotion { dx: 10.0, dy: 5.0 };
+        session.send_event(event.clone()).await.unwrap();
+
+        // Verify event was received
+        let (received_id, received_event) = rx.recv().await.unwrap();
+        assert_eq!(received_id, session_id);
+        assert!(matches!(received_event, InputEvent::PointerMotion { .. }));
+    }
+
+    #[tokio::test]
+    async fn session_requires_start() {
+        let (portal, _rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        let session_id = SessionId::new("/test/inactive/session");
+        let session = manager.create_session(session_id, "test".to_string()).await.unwrap();
+        session.select_devices(DeviceType::POINTER).await.unwrap();
+
+        // Don't start - should fail
+        let event = InputEvent::PointerMotion { dx: 10.0, dy: 5.0 };
+        let result = session.send_event(event).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn session_device_authorization() {
+        let (portal, mut rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        let session_id = SessionId::new("/test/auth/session");
+        let session = manager.create_session(session_id, "test".to_string()).await.unwrap();
+
+        // Only authorize keyboard
+        session.select_devices(DeviceType::KEYBOARD).await.unwrap();
+        session.start().await.unwrap();
+
+        // Keyboard event should work
+        let keyboard_event = InputEvent::KeyboardKeycode { keycode: 30, state: KeyState::Pressed };
+        let result = session.send_event(keyboard_event).await;
+        assert!(result.is_ok());
+
+        // Consume the event
+        let _ = rx.recv().await;
+
+        // Pointer event should fail (not authorized)
+        let pointer_event = InputEvent::PointerMotion { dx: 10.0, dy: 5.0 };
+        let result = session.send_event(pointer_event).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn all_input_event_types() {
+        let (portal, mut rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        let session_id = SessionId::new("/test/events/session");
+        let session = manager.create_session(session_id, "test".to_string()).await.unwrap();
+        session.select_devices(DeviceType::all()).await.unwrap();
+        session.start().await.unwrap();
+
+        // Test pointer events
+        let events = vec![
+            InputEvent::PointerMotion { dx: 1.0, dy: 2.0 },
+            InputEvent::PointerMotionAbsolute { stream: 0, x: 100.0, y: 200.0 },
+            InputEvent::PointerButton { button: 1, state: ButtonState::Pressed },
+            InputEvent::PointerAxis { dx: 0.0, dy: -10.0 },
+        ];
+
+        for event in events {
+            session.send_event(event.clone()).await.unwrap();
+            let (_, received) = rx.recv().await.unwrap();
+            assert!(std::mem::discriminant(&event) == std::mem::discriminant(&received));
+        }
+    }
+
+    #[test]
+    fn all_remote_desktop_modes() {
+        let modes = [
+            RemoteDesktopMode::Full,
+            RemoteDesktopMode::ViewOnly,
+            RemoteDesktopMode::InputOnly,
+            RemoteDesktopMode::None,
+        ];
+
+        for mode in modes {
+            let (portal, _rx) = create_portal_with_mode(mode);
+            assert_eq!(portal.session_mode(), mode);
+        }
+    }
+
+    #[tokio::test]
+    async fn session_close_cleans_up() {
+        let (portal, _rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        let session_id = SessionId::new("/test/cleanup/session");
+        let _session = manager.create_session(session_id.clone(), "test".to_string()).await.unwrap();
+
+        assert_eq!(manager.session_count().await, 1);
+
+        manager.close_session(&session_id).await;
+        assert_eq!(manager.session_count().await, 0);
+        assert!(manager.get_session(&session_id).await.is_none());
+    }
+
+    #[tokio::test]
+    async fn duplicate_session_fails() {
+        let (portal, _rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        let session_id = SessionId::new("/test/duplicate");
+        manager.create_session(session_id.clone(), "test".to_string()).await.unwrap();
+
+        // Second create should fail
+        let result = manager.create_session(session_id, "test".to_string()).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn max_sessions_enforced() {
+        let config = SessionManagerConfig {
+            max_sessions: 2,
+            ..Default::default()
+        };
+        let (manager, _rx) = SessionManager::new(config);
+        let portal = RemoteDesktopPortal::new(manager);
+        let manager = portal.session_manager();
+
+        manager.create_session(SessionId::new("/s/1"), "a".to_string()).await.unwrap();
+        manager.create_session(SessionId::new("/s/2"), "b".to_string()).await.unwrap();
+
+        // Third should fail
+        let result = manager.create_session(SessionId::new("/s/3"), "c".to_string()).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn session_ids_tracked() {
+        let (portal, _rx) = create_test_portal();
+        let manager = portal.session_manager();
+
+        manager.create_session(SessionId::new("/a"), "a".to_string()).await.unwrap();
+        manager.create_session(SessionId::new("/b"), "b".to_string()).await.unwrap();
+
+        let ids = manager.session_ids().await;
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&SessionId::new("/a")));
+        assert!(ids.contains(&SessionId::new("/b")));
     }
 }
