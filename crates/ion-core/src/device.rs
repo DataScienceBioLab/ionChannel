@@ -116,12 +116,122 @@ mod tests {
     }
 
     #[test]
+    fn device_type_from_u32_all() {
+        let devices = DeviceType::from(7u32);
+        assert!(devices.has_keyboard());
+        assert!(devices.has_pointer());
+        assert!(devices.has_touchscreen());
+    }
+
+    #[test]
+    fn device_type_from_u32_truncate() {
+        // Unknown bits should be truncated
+        let devices = DeviceType::from(0xFF);
+        assert_eq!(devices.bits(), 7); // Only KEYBOARD | POINTER | TOUCHSCREEN
+    }
+
+    #[test]
+    fn device_type_to_u32() {
+        let bits: u32 = DeviceType::desktop_standard().into();
+        assert_eq!(bits, 3);
+    }
+
+    #[test]
     fn device_type_display() {
         assert_eq!(
             DeviceType::desktop_standard().to_string(),
             "keyboard, pointer"
         );
         assert_eq!(DeviceType::empty().to_string(), "none");
+    }
+
+    #[test]
+    fn device_type_display_all() {
+        assert_eq!(
+            DeviceType::all_devices().to_string(),
+            "keyboard, pointer, touchscreen"
+        );
+    }
+
+    #[test]
+    fn device_type_display_single() {
+        assert_eq!(DeviceType::KEYBOARD.to_string(), "keyboard");
+        assert_eq!(DeviceType::POINTER.to_string(), "pointer");
+        assert_eq!(DeviceType::TOUCHSCREEN.to_string(), "touchscreen");
+    }
+
+    #[test]
+    fn device_type_default() {
+        let default = DeviceType::default();
+        assert_eq!(default, DeviceType::desktop_standard());
+        assert!(default.has_keyboard());
+        assert!(default.has_pointer());
+        assert!(!default.has_touchscreen());
+    }
+
+    #[test]
+    fn device_type_desktop_standard() {
+        let devices = DeviceType::desktop_standard();
+        assert!(devices.has_keyboard());
+        assert!(devices.has_pointer());
+        assert!(!devices.has_touchscreen());
+        assert_eq!(devices.bits(), 3);
+    }
+
+    #[test]
+    fn device_type_all_devices() {
+        let devices = DeviceType::all_devices();
+        assert!(devices.has_keyboard());
+        assert!(devices.has_pointer());
+        assert!(devices.has_touchscreen());
+        assert_eq!(devices.bits(), 7);
+    }
+
+    #[test]
+    fn device_type_union() {
+        let devices = DeviceType::KEYBOARD | DeviceType::TOUCHSCREEN;
+        assert!(devices.has_keyboard());
+        assert!(!devices.has_pointer());
+        assert!(devices.has_touchscreen());
+    }
+
+    #[test]
+    fn device_type_intersection() {
+        let a = DeviceType::desktop_standard();
+        let b = DeviceType::POINTER | DeviceType::TOUCHSCREEN;
+        let intersection = a & b;
+        assert!(!intersection.has_keyboard());
+        assert!(intersection.has_pointer());
+        assert!(!intersection.has_touchscreen());
+    }
+
+    #[test]
+    fn device_type_contains() {
+        let devices = DeviceType::all_devices();
+        assert!(devices.contains(DeviceType::KEYBOARD));
+        assert!(devices.contains(DeviceType::POINTER));
+        assert!(devices.contains(DeviceType::TOUCHSCREEN));
+        assert!(devices.contains(DeviceType::desktop_standard()));
+    }
+
+    #[test]
+    fn device_type_is_empty() {
+        assert!(DeviceType::empty().is_empty());
+        assert!(!DeviceType::KEYBOARD.is_empty());
+    }
+
+    #[test]
+    fn device_type_clone_eq() {
+        let a = DeviceType::desktop_standard();
+        let b = a.clone();
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn device_type_debug() {
+        let devices = DeviceType::desktop_standard();
+        let debug = format!("{:?}", devices);
+        assert!(debug.contains("KEYBOARD") || debug.contains("DeviceType"));
     }
 
     #[test]

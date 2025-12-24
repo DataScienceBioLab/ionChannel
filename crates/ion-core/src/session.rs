@@ -328,9 +328,177 @@ mod tests {
     }
 
     #[test]
+    fn session_id_new() {
+        let id = SessionId::new("/org/freedesktop/portal/session/1");
+        assert_eq!(id.as_str(), "/org/freedesktop/portal/session/1");
+    }
+
+    #[test]
+    fn session_id_display() {
+        let id = SessionId::new("test-session");
+        assert_eq!(id.to_string(), "test-session");
+    }
+
+    #[test]
+    fn session_id_from_string() {
+        let id: SessionId = String::from("from-string").into();
+        assert_eq!(id.as_str(), "from-string");
+    }
+
+    #[test]
+    fn session_id_from_str() {
+        let id: SessionId = "from-str".into();
+        assert_eq!(id.as_str(), "from-str");
+    }
+
+    #[test]
+    fn session_id_clone() {
+        let id1 = SessionId::new("clone-test");
+        let id2 = id1.clone();
+        assert_eq!(id1, id2);
+    }
+
+    #[test]
+    fn session_id_hash() {
+        use std::collections::HashSet;
+        let mut set = HashSet::new();
+        set.insert(SessionId::new("a"));
+        set.insert(SessionId::new("b"));
+        assert!(set.contains(&SessionId::new("a")));
+        assert!(!set.contains(&SessionId::new("c")));
+    }
+
+    #[test]
+    fn session_state_name() {
+        assert_eq!(SessionState::Created.name(), "Created");
+        assert_eq!(SessionState::DevicesSelected.name(), "DevicesSelected");
+        assert_eq!(SessionState::Active.name(), "Active");
+        assert_eq!(SessionState::Closed.name(), "Closed");
+    }
+
+    #[test]
+    fn session_state_display() {
+        assert_eq!(SessionState::Created.to_string(), "Created");
+        assert_eq!(SessionState::Active.to_string(), "Active");
+    }
+
+    #[tokio::test]
+    async fn session_app_id() {
+        let (tx, _rx) = mpsc::channel(16);
+        let session = SessionHandle::new(
+            SessionId::new("/test"),
+            "com.example.test".into(),
+            tx,
+        );
+        assert_eq!(session.app_id().await, "com.example.test");
+    }
+
+    #[tokio::test]
+    async fn session_uptime() {
+        let (tx, _rx) = mpsc::channel(16);
+        let session = SessionHandle::new(
+            SessionId::new("/test"),
+            "app".into(),
+            tx,
+        );
+        let uptime = session.uptime().await;
+        assert!(uptime.as_nanos() > 0);
+    }
+
+    #[tokio::test]
+    async fn session_select_devices_wrong_state() {
+        let (tx, _rx) = mpsc::channel(16);
+        let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
+        
+        // Move to DevicesSelected state
+        session.select_devices(DeviceType::KEYBOARD).await.unwrap();
+        
+        // Try to select devices again (should fail)
+        let result = session.select_devices(DeviceType::POINTER).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn session_start_wrong_state() {
+        let (tx, _rx) = mpsc::channel(16);
+        let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
+        
+        // Try to start without selecting devices (should fail)
+        let result = session.start().await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn session_send_event_wrong_state() {
+        let (tx, _rx) = mpsc::channel(16);
+        let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
+        
+        // Try to send event before starting (should fail)
+        let result = session.send_event(InputEvent::pointer_motion(1.0, 1.0)).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn session_unauthorized_touch() {
+        let (tx, _rx) = mpsc::channel(16);
+        let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
+        
+        // Only authorize pointer
+        session.select_devices(DeviceType::POINTER).await.unwrap();
+        session.start().await.unwrap();
+        
+        // Try to send touch event (should fail)
+        let result = session.send_event(InputEvent::TouchDown {
+            stream: 0,
+            slot: 0,
+            x: 10.0,
+            y: 10.0,
+        }).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn session_channel_closed() {
+        let (tx, rx) = mpsc::channel(16);
+        let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
+        
+        session.select_devices(DeviceType::POINTER).await.unwrap();
+        session.start().await.unwrap();
+        
+        // Drop the receiver to close the channel
+        drop(rx);
+        
+        // Try to send event (should fail)
+        let result = session.send_event(InputEvent::pointer_motion(1.0, 1.0)).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn session_multiple_events() {
+        let (tx, mut rx) = mpsc::channel(16);
+        let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
+        
+        session.select_devices(DeviceType::all_devices()).await.unwrap();
+        session.start().await.unwrap();
+        
+        // Send multiple events
+        session.send_event(InputEvent::pointer_motion(1.0, 1.0)).await.unwrap();
+        session.send_event(InputEvent::key(28, crate::event::KeyState::Pressed)).await.unwrap();
+        session.send_event(InputEvent::TouchDown { stream: 0, slot: 0, x: 10.0, y: 10.0 }).await.unwrap();
+        
+        assert_eq!(session.event_count().await, 3);
+        
+        // Receive all events
+        assert!(rx.recv().await.unwrap().is_pointer());
+        assert!(rx.recv().await.unwrap().is_keyboard());
+        assert!(rx.recv().await.unwrap().is_touch());
+    }
+
+    #[test]
     fn session_handle_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<SessionHandle>();
         assert_send_sync::<SessionId>();
+        assert_send_sync::<SessionState>();
     }
 }
