@@ -375,6 +375,132 @@ mod tests {
         assert!(result.is_err());
     }
 
+    #[tokio::test]
+    async fn service_validates_touch() {
+        let (service, _rx) = create_test_service().await;
+
+        // Register session with touch only
+        service
+            .register_session("/test/touch", DeviceType::TOUCHSCREEN)
+            .await;
+
+        // Touch should work
+        let result = service
+            .validate_session("/test/touch", false, false, true)
+            .await;
+        assert!(result.is_ok());
+
+        // Pointer should fail
+        let result = service
+            .validate_session("/test/touch", false, true, false)
+            .await;
+        assert!(result.is_err());
+
+        // Keyboard should fail
+        let result = service
+            .validate_session("/test/touch", true, false, false)
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn service_validates_pointer() {
+        let (service, _rx) = create_test_service().await;
+
+        // Register session with pointer only
+        service
+            .register_session("/test/pointer", DeviceType::POINTER)
+            .await;
+
+        // Pointer should work
+        let result = service
+            .validate_session("/test/pointer", false, true, false)
+            .await;
+        assert!(result.is_ok());
+
+        // Keyboard should fail
+        let result = service
+            .validate_session("/test/pointer", true, false, false)
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn service_send_event_success() {
+        let (service, mut rx) = create_test_service().await;
+
+        // Register a session
+        service
+            .register_session("/test/send", DeviceType::POINTER)
+            .await;
+
+        // Send an event
+        let event = InputEvent::PointerMotion { dx: 10.0, dy: 20.0 };
+        let result = service.send_event("/test/send", event.clone()).await;
+        assert!(result.is_ok());
+
+        // Verify event was received
+        let received = rx.recv().await.unwrap();
+        assert_eq!(received.event, event);
+    }
+
+    #[tokio::test]
+    async fn service_send_event_closed_channel() {
+        let (tx, rx) = mpsc::channel(1);
+        let rate_limiter = RateLimiter::new(RateLimiterConfig::permissive());
+        let service = RemoteDesktopService::new(tx, rate_limiter);
+
+        // Register session
+        service
+            .register_session("/test/closed", DeviceType::POINTER)
+            .await;
+
+        // Drop receiver to close channel
+        drop(rx);
+
+        // Send should fail
+        let event = InputEvent::PointerMotion { dx: 1.0, dy: 1.0 };
+        let result = service.send_event("/test/closed", event).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn service_multiple_sessions() {
+        let (service, _rx) = create_test_service().await;
+
+        service
+            .register_session("/test/1", DeviceType::POINTER)
+            .await;
+        service
+            .register_session("/test/2", DeviceType::KEYBOARD)
+            .await;
+        service
+            .register_session("/test/3", DeviceType::desktop_standard())
+            .await;
+
+        assert_eq!(service.active_session_count().await, 3);
+
+        service.unregister_session("/test/2").await;
+        assert_eq!(service.active_session_count().await, 2);
+    }
+
+    #[tokio::test]
+    async fn service_version() {
+        let (service, _rx) = create_test_service().await;
+        assert_eq!(service.version().await, 1);
+    }
+
+    #[tokio::test]
+    async fn compositor_session_clone() {
+        let session = CompositorSession {
+            authorized_devices: DeviceType::desktop_standard(),
+            active: true,
+        };
+        let cloned = session.clone();
+        assert_eq!(cloned.authorized_devices, session.authorized_devices);
+        assert_eq!(cloned.active, session.active);
+    }
+
     #[test]
     fn service_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}

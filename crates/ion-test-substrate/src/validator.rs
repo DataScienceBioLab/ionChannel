@@ -247,5 +247,217 @@ mod tests {
         assert_eq!(result.stats.passed, 1);
         assert_eq!(result.stats.failed, 1);
     }
+
+    #[test]
+    fn test_validator_all_passed() {
+        let mut v = Validator::new();
+        v.check("test1", true, "Passed");
+        v.check("test2", true, "Also passed");
+        v.check("test3", true, "Still passed");
+
+        let result = v.build();
+        assert!(result.is_valid());
+        assert_eq!(result.stats.total, 3);
+        assert_eq!(result.stats.passed, 3);
+        assert_eq!(result.stats.failed, 0);
+        assert!(result.failures().is_empty());
+    }
+
+    #[test]
+    fn test_validator_all_failed() {
+        let mut v = Validator::new();
+        v.check("test1", false, "Failed");
+        v.check("test2", false, "Also failed");
+
+        let result = v.build();
+        assert!(!result.is_valid());
+        assert_eq!(result.failures().len(), 2);
+    }
+
+    #[test]
+    fn test_validator_default() {
+        let v = Validator::default();
+        let result = v.build();
+        assert!(result.is_valid()); // Empty validator passes
+        assert_eq!(result.stats.total, 0);
+    }
+
+    #[test]
+    fn test_validator_check_spec() {
+        let mut v = Validator::new();
+        v.check_spec(
+            "interface_check",
+            true,
+            "Interface registered",
+            "https://example.com/spec",
+        );
+
+        let result = v.build();
+        assert!(result.is_valid());
+        assert_eq!(result.checks[0].spec_ref, Some("https://example.com/spec".to_string()));
+    }
+
+    #[test]
+    fn test_validation_check_fields() {
+        let check = ValidationCheck {
+            name: "test".to_string(),
+            passed: true,
+            message: "Test passed".to_string(),
+            spec_ref: Some("spec-1.0".to_string()),
+        };
+
+        let cloned = check.clone();
+        assert_eq!(cloned.name, "test");
+        assert!(cloned.passed);
+        assert_eq!(cloned.message, "Test passed");
+        assert_eq!(cloned.spec_ref, Some("spec-1.0".to_string()));
+    }
+
+    #[test]
+    fn test_validation_result_failures() {
+        let mut v = Validator::new();
+        v.check("pass", true, "OK");
+        v.check("fail1", false, "Error 1");
+        v.check("fail2", false, "Error 2");
+
+        let result = v.build();
+        let failures = result.failures();
+        assert_eq!(failures.len(), 2);
+        assert_eq!(failures[0].name, "fail1");
+        assert_eq!(failures[1].name, "fail2");
+    }
+
+    #[test]
+    fn test_validate_session_lifecycle_all_success() {
+        let mut v = Validator::new();
+        v.validate_session_lifecycle(true, true, true, true);
+
+        let result = v.build();
+        assert!(result.is_valid());
+        assert_eq!(result.stats.total, 4);
+    }
+
+    #[test]
+    fn test_validate_session_lifecycle_partial() {
+        let mut v = Validator::new();
+        v.validate_session_lifecycle(true, true, false, false);
+
+        let result = v.build();
+        assert!(!result.is_valid());
+        assert_eq!(result.stats.passed, 2);
+        assert_eq!(result.stats.failed, 2);
+    }
+
+    #[test]
+    fn test_validate_device_types_all() {
+        let mut v = Validator::new();
+        v.validate_device_types(0b11); // Keyboard + Pointer
+
+        let result = v.build();
+        assert!(result.is_valid());
+        assert_eq!(result.stats.passed, 2);
+    }
+
+    #[test]
+    fn test_validate_device_types_keyboard_only() {
+        let mut v = Validator::new();
+        v.validate_device_types(0b01); // Keyboard only
+
+        let result = v.build();
+        assert!(!result.is_valid());
+        assert_eq!(result.stats.passed, 1);
+        assert_eq!(result.stats.failed, 1);
+    }
+
+    #[test]
+    fn test_validate_device_types_pointer_only() {
+        let mut v = Validator::new();
+        v.validate_device_types(0b10); // Pointer only
+
+        let result = v.build();
+        assert!(!result.is_valid());
+        assert_eq!(result.stats.passed, 1);
+        assert_eq!(result.stats.failed, 1);
+    }
+
+    #[test]
+    fn test_validate_device_types_none() {
+        let mut v = Validator::new();
+        v.validate_device_types(0b00); // None
+
+        let result = v.build();
+        assert!(!result.is_valid());
+        assert_eq!(result.stats.failed, 2);
+    }
+
+    #[test]
+    fn test_validate_input_methods_all() {
+        let mut v = Validator::new();
+        let mut results = HashMap::new();
+        results.insert("NotifyPointerMotion".to_string(), true);
+        results.insert("NotifyPointerMotionAbsolute".to_string(), true);
+        results.insert("NotifyPointerButton".to_string(), true);
+        results.insert("NotifyPointerAxis".to_string(), true);
+        results.insert("NotifyPointerAxisDiscrete".to_string(), true);
+        results.insert("NotifyKeyboardKeycode".to_string(), true);
+        results.insert("NotifyKeyboardKeysym".to_string(), true);
+        results.insert("NotifyTouchDown".to_string(), true);
+        results.insert("NotifyTouchMotion".to_string(), true);
+        results.insert("NotifyTouchUp".to_string(), true);
+
+        v.validate_input_methods(&results);
+        let result = v.build();
+        assert!(result.is_valid());
+        assert_eq!(result.stats.total, 10);
+    }
+
+    #[test]
+    fn test_validate_input_methods_partial() {
+        let mut v = Validator::new();
+        let mut results = HashMap::new();
+        results.insert("NotifyPointerMotion".to_string(), true);
+        results.insert("NotifyKeyboardKeycode".to_string(), true);
+        // Other methods missing - should fail
+
+        v.validate_input_methods(&results);
+        let result = v.build();
+        assert!(!result.is_valid());
+        assert_eq!(result.stats.passed, 2);
+        assert_eq!(result.stats.failed, 8);
+    }
+
+    #[test]
+    fn test_validate_input_methods_empty() {
+        let mut v = Validator::new();
+        let results = HashMap::new();
+
+        v.validate_input_methods(&results);
+        let result = v.build();
+        assert!(!result.is_valid());
+        assert_eq!(result.stats.failed, 10);
+    }
+
+    #[test]
+    fn test_validation_stats_clone() {
+        let stats = ValidationStats {
+            total: 10,
+            passed: 8,
+            failed: 2,
+        };
+        let cloned = stats.clone();
+        assert_eq!(cloned.total, 10);
+        assert_eq!(cloned.passed, 8);
+        assert_eq!(cloned.failed, 2);
+    }
+
+    #[test]
+    fn test_validation_result_clone() {
+        let mut v = Validator::new();
+        v.check("test", true, "OK");
+        let result = v.build();
+        let cloned = result.clone();
+        assert_eq!(cloned.all_passed, result.all_passed);
+        assert_eq!(cloned.checks.len(), result.checks.len());
+    }
 }
 
