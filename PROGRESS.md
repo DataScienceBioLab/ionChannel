@@ -28,7 +28,7 @@ See: [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
 - [x] PortalCore refactored for testability
 - [x] Full module coverage (15+ test files)
 - [x] Measure coverage % (80.22% achieved)
-- [ ] E2E demonstration tests
+- [x] E2E demonstration tests (7 scenarios)
 - [ ] Chaos/fuzz testing
 - [ ] Security audit
 
@@ -89,7 +89,8 @@ Note: ion-portal has low coverage due to D-Bus interface methods that require a 
 |--------|-------|
 | Lines of Rust | ~10,000 |
 | Unit tests | 357 |
-| Integration tests | 5 |
+| E2E tests | 7 |
+| D-Bus tests | 5 |
 | Coverage | 80.22% |
 | Crates | 5 |
 | Capture tiers | 3 |
@@ -112,14 +113,22 @@ Note: ion-portal has low coverage due to D-Bus interface methods that require a 
 ## Test Results
 
 ```
-$ cargo test --workspace --lib
+$ cargo test --workspace
 
-ion-compositor:    181 passed
-ion-core:           95 passed
-ion-portal:         58 passed
-ion-test-substrate: 23 passed
-──────────────────────────────────
-Total: 357 passing (80.22% coverage)
+Unit tests:
+  ion-compositor:    181 passed
+  ion-core:           95 passed
+  ion-portal:         58 passed
+  ion-test-substrate: 23 passed
+  ─────────────────────────────────
+  Subtotal: 357 unit tests
+
+Integration tests:
+  e2e_demonstration:   7 passed
+  ─────────────────────────────────
+  Subtotal: 7 E2E tests
+
+Total: 364 tests (80.22% coverage)
 ```
 
 ### Capability Check (Host)
