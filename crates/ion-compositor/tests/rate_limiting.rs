@@ -2,11 +2,12 @@
 //!
 //! These tests verify that the rate limiter correctly protects
 //! against event flooding.
+//!
+//! Uses tokio's time control for deterministic testing without sleeps.
 
 use ion_compositor::rate_limiter::{RateLimiter, RateLimiterConfig};
 use ion_core::session::SessionId;
 use std::time::Duration;
-use tokio::time::sleep;
 
 /// Test: Events within burst limit are allowed
 #[tokio::test]
@@ -53,12 +54,17 @@ async fn events_over_burst_rejected() {
 }
 
 /// Test: Burst resets after window expires
+///
+/// NOTE: This test uses sleep because the RateLimiter uses std::time::Instant
+/// which is not controlled by tokio's time mocking. This is acceptable as it
+/// tests time-dependent behavior, not async completion.
 #[tokio::test]
 async fn burst_resets_after_window() {
     let config = RateLimiterConfig {
         max_events_per_sec: 100,
         burst_limit: 2,
-        window: Duration::from_millis(100),
+        // Very short window for fast tests
+        window: Duration::from_millis(50),
     };
     let limiter = RateLimiter::new(config);
     let session = SessionId::new("/test/rate/3");
@@ -68,8 +74,8 @@ async fn burst_resets_after_window() {
     assert!(limiter.check(&session).await.is_ok());
     assert!(limiter.check(&session).await.is_err());
 
-    // Wait for window to expire (burst resets at window/10)
-    sleep(Duration::from_millis(20)).await;
+    // Wait for burst to reset (window/10 = 5ms, use 10ms for safety)
+    tokio::time::sleep(Duration::from_millis(10)).await;
 
     // Should be allowed again
     assert!(
