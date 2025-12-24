@@ -64,8 +64,8 @@ Building comprehensive test coverage for reproducible validation.
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | ~8,000 |
-| Unit tests | 167 |
+| Lines of Rust | ~8,500 |
+| Unit tests | 228 |
 | Integration tests | 5 |
 | Crates | 5 |
 | Capture tiers | 3 |
@@ -90,12 +90,12 @@ Building comprehensive test coverage for reproducible validation.
 ```
 $ cargo test --workspace --lib
 
-ion-compositor: 69 passed
-ion-core:       44 passed
-ion-portal:     48 passed
-ion-test-substrate: 6 passed
-──────────────────────────────
-Total: 167 passed
+ion-compositor:     69 passed
+ion-core:           95 passed
+ion-portal:         58 passed
+ion-test-substrate:  6 passed
+──────────────────────────────────
+Total: 228 passing
 ```
 
 ### Capability Check (Host)
