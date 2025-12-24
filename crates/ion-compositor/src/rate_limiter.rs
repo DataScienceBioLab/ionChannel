@@ -221,6 +221,28 @@ impl RateLimiter {
 mod tests {
     use super::*;
 
+    #[test]
+    fn config_default() {
+        let config = RateLimiterConfig::default();
+        assert_eq!(config.max_events_per_sec, 1000);
+        assert_eq!(config.burst_limit, 100);
+        assert_eq!(config.window, Duration::from_secs(1));
+    }
+
+    #[test]
+    fn config_permissive() {
+        let config = RateLimiterConfig::permissive();
+        assert_eq!(config.max_events_per_sec, 10_000);
+        assert_eq!(config.burst_limit, 1000);
+    }
+
+    #[test]
+    fn config_strict() {
+        let config = RateLimiterConfig::strict();
+        assert_eq!(config.max_events_per_sec, 500);
+        assert_eq!(config.burst_limit, 50);
+    }
+
     #[tokio::test]
     async fn rate_limiter_allows_normal_traffic() {
         let limiter = RateLimiter::new(RateLimiterConfig {
@@ -294,9 +316,84 @@ mod tests {
         assert_eq!(limiter.session_count().await, 0);
     }
 
+    #[tokio::test]
+    async fn rate_limiter_with_defaults() {
+        let limiter = RateLimiter::with_defaults();
+        let session = SessionId::new("/test/defaults");
+
+        // Default config should allow many events
+        for _ in 0..50 {
+            limiter.check(&session).await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn current_rate_new_session() {
+        let limiter = RateLimiter::with_defaults();
+        let session = SessionId::new("/test/rate");
+
+        // New session should have 0 rate
+        let rate = limiter.current_rate(&session).await;
+        assert_eq!(rate, 0);
+    }
+
+    #[tokio::test]
+    async fn current_rate_after_events() {
+        let limiter = RateLimiter::new(RateLimiterConfig {
+            max_events_per_sec: 1000,
+            burst_limit: 100,
+            window: Duration::from_secs(1),
+        });
+        let session = SessionId::new("/test/rate");
+
+        // Send some events
+        for _ in 0..10 {
+            limiter.check(&session).await.unwrap();
+        }
+
+        let rate = limiter.current_rate(&session).await;
+        assert!(rate >= 10, "Rate should be at least 10, got {}", rate);
+    }
+
+    #[tokio::test]
+    async fn limiter_clone() {
+        let limiter1 = RateLimiter::with_defaults();
+        let limiter2 = limiter1.clone();
+        let session = SessionId::new("/test/clone");
+
+        limiter1.check(&session).await.unwrap();
+
+        // Both should see the same session
+        assert_eq!(limiter1.session_count().await, 1);
+        assert_eq!(limiter2.session_count().await, 1);
+    }
+
+    #[tokio::test]
+    async fn remove_nonexistent_session() {
+        let limiter = RateLimiter::with_defaults();
+        let session = SessionId::new("/test/nonexistent");
+
+        // Should not panic
+        limiter.remove_session(&session).await;
+        assert_eq!(limiter.session_count().await, 0);
+    }
+
+    #[tokio::test]
+    async fn multiple_sessions() {
+        let limiter = RateLimiter::with_defaults();
+
+        for i in 0..5 {
+            let session = SessionId::new(format!("/test/{}", i));
+            limiter.check(&session).await.unwrap();
+        }
+
+        assert_eq!(limiter.session_count().await, 5);
+    }
+
     #[test]
     fn rate_limiter_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<RateLimiter>();
+        assert_send_sync::<RateLimiterConfig>();
     }
 }
