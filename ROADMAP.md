@@ -139,13 +139,15 @@ ion-compositor/src/capabilities.rs  # CapabilityProvider
 
 ### Phase 9: ecoPrimals Integration
 
-**Songbird integration designed** - see [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
+**Songbird integration ready NOW** - see [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
 
-- [ ] Add `Protocol::RemoteDesktop` to songbird
+- [x] ~~Add `Protocol::RemoteDesktop` to songbird~~ (NOT NEEDED - use features!)
 - [ ] ionChannel capability registration with discovery
 - [ ] Trust level → capability mapping
 - [ ] VM hosting with per-VM ionChannel instances
 - [ ] High-performance tarpc adapter
+
+**Key discovery:** Songbird's features + metadata system is already extensible!
 
 ### Phase 10: Pre-Login RDP
 

@@ -1,7 +1,7 @@
 # ionChannel ↔ Songbird Integration
 
-**Status:** Design  
-**Version:** 0.1.0  
+**Status:** Ready to Implement  
+**Version:** 0.2.0  
 **License:** AGPL-3.0-or-later (Exception: System76 GPL absorption)  
 
 ---
@@ -9,6 +9,17 @@
 ## Overview
 
 This document specifies how `ionChannel` integrates with the `songbird` federated ML orchestration system to enable secure, capability-based remote desktop access across the ecoPrimals ecosystem.
+
+### Key Discovery (2024-12-24)
+
+**ionChannel can integrate NOW without any songbird code changes!**
+
+Songbird's existing architecture supports:
+- ✅ **String-based features** — `register_feature("remote-desktop")`
+- ✅ **Metadata HashMap** — Arbitrary key-value pairs on protocols
+- ✅ **Feature-based discovery** — `with_feature("remote-desktop")`
+
+No need to add `Protocol::RemoteDesktop` to songbird's enum.
 
 ### Use Cases
 
@@ -154,61 +165,99 @@ ionChannel respects songbird's layered information model:
 
 ## Protocol Integration
 
-### New Protocol Type
+### No Songbird Code Changes Required! ✅
+
+ionChannel uses songbird's **existing extensibility mechanisms**:
+
+1. **Features system** — String-based, infinitely extensible
+2. **Metadata HashMap** — Arbitrary key-value pairs on protocols
+3. **Transport protocol** — Use `Protocol::Https` as the transport layer
+
+### ionChannel Registration (Works NOW)
 
 ```rust
-// Addition to songbird Protocol enum
-pub enum Protocol {
-    // ... existing ...
-    
-    /// ionChannel Remote Desktop Protocol
-    RemoteDesktop,
-}
+use songbird_network_federation::{
+    Protocol, ProtocolCapability, ProtocolCapabilityManager, ProtocolStatus,
+};
+use std::collections::HashMap;
 
-impl Protocol {
-    pub fn performance_tier(&self) -> u8 {
-        match self {
-            // ...
-            Protocol::RemoteDesktop => 4, // High performance with security
-        }
-    }
+/// Register ionChannel with songbird capability system
+async fn register_with_songbird(
+    capability_manager: &ProtocolCapabilityManager,
+    mode: RemoteDesktopMode,
+    capture_tier: Option<CaptureTier>,
+) {
+    // 1. Register the feature (string-based, extensible!)
+    capability_manager.register_feature("remote-desktop".to_string()).await;
     
-    pub fn is_encrypted(&self) -> bool {
-        match self {
-            // ...
-            Protocol::RemoteDesktop => true, // Always encrypted
-        }
+    // 2. Register protocol with rich metadata
+    let mut metadata = HashMap::new();
+    metadata.insert("service_type".to_string(), "remote-desktop".to_string());
+    metadata.insert("mode".to_string(), mode.to_string());
+    if let Some(tier) = capture_tier {
+        metadata.insert("capture_tier".to_string(), tier.to_string());
     }
+    metadata.insert("max_sessions".to_string(), "10".to_string());
+    metadata.insert("vm_hosting".to_string(), "true".to_string());
+    metadata.insert("portal_interface".to_string(), 
+        "org.freedesktop.impl.portal.RemoteDesktop".to_string());
+    
+    capability_manager.register_protocol(ProtocolCapability {
+        protocol: Protocol::Https,  // Transport protocol
+        port: 1985,                  // ionChannel port
+        path: Some("/org/freedesktop/portal/desktop".to_string()),
+        status: ProtocolStatus::Active,
+        metadata,
+    }).await;
 }
 ```
 
-### Capability Advertisement
+### Client Discovery
 
 ```rust
-// ionChannel registers with songbird discovery
-pub struct RemoteDesktopCapabilityInfo {
-    /// Port for RemoteDesktop portal
-    pub port: u16,
+use songbird_discovery::{UniversalDiscoveryFactory, ServiceQuery};
+
+/// Discover ionChannel remote desktop services
+async fn discover_remote_desktops(
+    discovery: &impl ServiceDiscovery,
+) -> Vec<RemoteDesktopEndpoint> {
+    // Query for remote-desktop feature
+    let services = discovery.discover_services(&ServiceQuery::builder()
+        .with_feature("remote-desktop")
+        .build()).await.unwrap_or_default();
     
-    /// Available modes
-    pub modes: Vec<RemoteDesktopMode>,
-    
-    /// Capture tier (if screen capture available)
-    pub capture_tier: Option<CaptureTier>,
-    
-    /// Maximum concurrent sessions
-    pub max_sessions: u32,
-    
-    /// VMs available for remote access
-    pub available_vms: Vec<VmInfo>,
+    // Extract ionChannel endpoints from metadata
+    services.iter()
+        .flat_map(|service| {
+            service.protocols.iter()
+                .filter(|cap| {
+                    cap.metadata.get("service_type") == Some(&"remote-desktop".to_string())
+                })
+                .map(|cap| RemoteDesktopEndpoint {
+                    tower_id: service.tower_id.clone(),
+                    endpoint: format!("{}:{}{}", 
+                        service.endpoint, 
+                        cap.port, 
+                        cap.path.as_deref().unwrap_or("")
+                    ),
+                    mode: cap.metadata.get("mode")
+                        .and_then(|m| RemoteDesktopMode::from_str(m).ok())
+                        .unwrap_or(RemoteDesktopMode::None),
+                    capture_tier: cap.metadata.get("capture_tier")
+                        .and_then(|t| CaptureTier::from_str(t).ok()),
+                    vm_hosting: cap.metadata.get("vm_hosting") == Some(&"true".to_string()),
+                })
+        })
+        .collect()
 }
 
-pub struct VmInfo {
-    pub id: String,
-    pub name: String,
+/// Parsed remote desktop endpoint
+pub struct RemoteDesktopEndpoint {
+    pub tower_id: String,
+    pub endpoint: String,
     pub mode: RemoteDesktopMode,
-    pub allocated_to: Option<String>, // User/org ID
-    pub status: VmStatus,
+    pub capture_tier: Option<CaptureTier>,
+    pub vm_hosting: bool,
 }
 ```
 
@@ -216,70 +265,27 @@ pub struct VmInfo {
 
 ## Discovery Flow
 
-### Tower Registration
+### Metadata Schema
 
-```rust
-// ionChannel registers itself with songbird
-async fn register_with_songbird(
-    capability_manager: &ProtocolCapabilityManager,
-    ion_portal: &PortalCore,
-) -> Result<()> {
-    // Detect available capabilities
-    let mode = ion_portal.session_mode();
-    let capture_tier = ion_portal.capture_tier();
-    
-    // Build capability info
-    let mut metadata = HashMap::new();
-    metadata.insert("mode".to_string(), mode.to_string());
-    if let Some(tier) = capture_tier {
-        metadata.insert("capture_tier".to_string(), tier.to_string());
-    }
-    
-    // Register with songbird
-    capability_manager.register_protocol(ProtocolCapability {
-        protocol: Protocol::RemoteDesktop,
-        port: 1985, // Default ionChannel port
-        path: Some("/org/freedesktop/portal/desktop".to_string()),
-        status: ProtocolStatus::Active,
-        metadata,
-    }).await;
-    
-    // Register feature
-    capability_manager.register_feature("remote-desktop".to_string()).await;
-    
-    Ok(())
-}
-```
+ionChannel uses the following metadata keys on the `ProtocolCapability`:
 
-### Client Discovery
+| Key | Type | Description |
+|-----|------|-------------|
+| `service_type` | String | Always `"remote-desktop"` |
+| `mode` | String | `"full"`, `"input_only"`, `"view_only"`, `"none"` |
+| `capture_tier` | String | `"dmabuf"`, `"shm"`, `"cpu"` (optional) |
+| `max_sessions` | String | Max concurrent sessions (e.g., `"10"`) |
+| `vm_hosting` | String | `"true"` if VMs available |
+| `portal_interface` | String | D-Bus interface name |
 
-```rust
-// Client discovers remote desktop capability
-async fn discover_remote_desktops(
-    discovery: &UniversalDiscoveryFactory,
-) -> Result<Vec<RemoteDesktopEndpoint>> {
-    // Query for towers with remote-desktop feature
-    let query = ServiceQuery::builder()
-        .with_feature("remote-desktop")
-        .build();
-    
-    let services = discovery.discover_services(&query).await?;
-    
-    // Extract remote desktop endpoints
-    services.iter()
-        .filter_map(|s| s.get_protocol_capability(Protocol::RemoteDesktop))
-        .map(|cap| RemoteDesktopEndpoint {
-            tower_id: cap.tower_id.clone(),
-            endpoint: format!("{}:{}", cap.endpoint, cap.port),
-            mode: cap.metadata.get("mode")
-                .and_then(|m| RemoteDesktopMode::from_str(m).ok())
-                .unwrap_or(RemoteDesktopMode::None),
-            capture_tier: cap.metadata.get("capture_tier")
-                .and_then(|t| CaptureTier::from_str(t).ok()),
-        })
-        .collect()
-}
-```
+### VM Metadata (when hosting VMs)
+
+Additional metadata for VM-hosting towers:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `vm_count` | String | Number of available VMs |
+| `vm_list` | String | JSON array of VM IDs |
 
 ---
 
@@ -428,12 +434,14 @@ This enables:
 
 ## Implementation Phases
 
-### Phase 1: Discovery Integration (Week 1)
+### Phase 1: Discovery Integration (Week 1) ✅ READY NOW
 
-- [ ] Add `Protocol::RemoteDesktop` to songbird
-- [ ] ionChannel registers with songbird discovery
+- [x] ~~Add `Protocol::RemoteDesktop` to songbird~~ (NOT NEEDED!)
+- [ ] ionChannel registers with songbird discovery (using features + metadata)
 - [ ] Client can discover remote desktop endpoints
 - [ ] Basic auth via songbird trust manager
+
+**No songbird code changes required!**
 
 ### Phase 2: Session Bridge (Week 2)
 
@@ -452,6 +460,22 @@ This enables:
 - [ ] tarpc adapter for ionChannel
 - [ ] Zero-copy frame sharing
 - [ ] Direct songbird integration bypass D-Bus
+
+---
+
+## Integration Gap Discovered
+
+### Gap #5: Protocol Extensibility (Documented by songbird team)
+
+**Problem:** `Protocol` enum is hardcoded in songbird
+
+**Workaround:** ✅ Features + metadata HashMap (works now!)
+
+**Better Solution:** Make `Protocol` string-based (P2 enhancement, not blocking)
+
+**Priority:** P2 (workaround exists, not urgent)
+
+**Location:** `ecoPrimals/songBird/showcase/08-ecosystem-showcase/gaps/PROTOCOL_EXTENSIBILITY_GAP.md`
 
 ---
 
