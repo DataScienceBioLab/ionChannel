@@ -452,6 +452,7 @@ impl ShmCaptureBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::capture::ScreenCaptureExt;
 
     #[tokio::test]
     async fn shm_capture_single_frame() {
@@ -512,9 +513,113 @@ mod tests {
     }
 
     #[test]
+    fn shm_config_default() {
+        let config = ShmCaptureConfig::default();
+        assert_eq!(config.target_fps, 30);
+        assert_eq!(config.buffer_count, 2);
+        assert_eq!(config.preferred_format, FrameFormat::Bgra8888);
+        assert_eq!(config.timeout, Duration::from_millis(100));
+    }
+
+    #[test]
+    fn shm_config_clone() {
+        let config = ShmCaptureConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.target_fps, cloned.target_fps);
+    }
+
+    #[tokio::test]
+    async fn shm_start_stream() {
+        let capture = ShmCapture::with_defaults(100, 100);
+        let result = capture.start_stream(30);
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn shm_stop_stream() {
+        let capture = ShmCapture::with_defaults(100, 100);
+        let result = capture.stop_stream();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn shm_is_capturing() {
+        let capture = ShmCapture::with_defaults(100, 100);
+        assert!(!capture.is_capturing());
+    }
+
+    #[test]
+    fn shm_tier() {
+        let capture = ShmCapture::with_defaults(100, 100);
+        assert_eq!(capture.tier(), CaptureTier::Shm);
+    }
+
+    #[test]
+    fn shm_is_optimal() {
+        let capture = ShmCapture::with_defaults(100, 100);
+        assert!(!capture.is_optimal());
+    }
+
+    #[test]
+    fn shm_is_available() {
+        let capture = ShmCapture::with_defaults(100, 100);
+        assert!(capture.is_available());
+    }
+
+    #[tokio::test]
+    async fn shm_builder_try_build_ok() {
+        let result = ShmCaptureBuilder::new()
+            .dimensions(100, 100)
+            .try_build();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn shm_builder_try_build_no_width() {
+        let result = ShmCaptureBuilder::new().try_build();
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn shm_builder_timeout() {
+        let capture = ShmCaptureBuilder::new()
+            .dimensions(100, 100)
+            .timeout(Duration::from_secs(5))
+            .build();
+        assert_eq!(capture.config.timeout, Duration::from_secs(5));
+    }
+
+    #[test]
+    fn shm_builder_default() {
+        let builder = ShmCaptureBuilder::default();
+        assert!(builder.width.is_none());
+        assert!(builder.height.is_none());
+    }
+
+    #[tokio::test]
+    async fn shm_generate_test_pattern_bgra() {
+        let capture = ShmCapture::with_defaults(64, 64);
+        let data = capture.generate_test_pattern(64, 64, FrameFormat::Bgra8888, 0);
+        assert_eq!(data.len(), 64 * 64 * 4);
+    }
+
+    #[tokio::test]
+    async fn shm_generate_test_pattern_rgba() {
+        let config = ShmCaptureConfig {
+            preferred_format: FrameFormat::Rgba8888,
+            ..Default::default()
+        };
+        let capture = ShmCapture::new(64, 64, config);
+        let data = capture.generate_test_pattern(64, 64, FrameFormat::Rgba8888, 0);
+        assert_eq!(data.len(), 64 * 64 * 4);
+    }
+
+    #[test]
     fn shm_capture_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<ShmCapture>();
+        assert_send_sync::<ShmCaptureConfig>();
+        assert_send_sync::<ShmCaptureBuilder>();
     }
 }
 

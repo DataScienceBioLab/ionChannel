@@ -239,6 +239,7 @@ impl ScreenCapture for DmabufCapture {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::capture::ScreenCaptureExt;
 
     #[tokio::test]
     async fn dmabuf_capture_basic() {
@@ -247,6 +248,16 @@ mod tests {
 
         assert_eq!(frame.width(), 1920);
         assert_eq!(frame.height(), 1080);
+    }
+
+    #[tokio::test]
+    async fn dmabuf_capture_multiple_frames() {
+        let capture = DmabufCapture::with_defaults(100, 100);
+        
+        let frame1 = capture.do_capture().await.unwrap();
+        let frame2 = capture.do_capture().await.unwrap();
+        
+        assert_eq!(frame1.metadata.sequence + 1, frame2.metadata.sequence);
     }
 
     #[test]
@@ -260,15 +271,109 @@ mod tests {
     }
 
     #[test]
+    fn dmabuf_config_default() {
+        let config = DmabufCaptureConfig::default();
+        assert_eq!(config.target_fps, 60);
+        assert!(!config.preferred_formats.is_empty());
+    }
+
+    #[test]
+    fn dmabuf_custom_config() {
+        let config = DmabufCaptureConfig {
+            preferred_formats: vec![
+                DrmFormat::new(FrameFormat::Rgba8888.fourcc(), DrmFormat::MODIFIER_LINEAR),
+            ],
+            target_fps: 30,
+        };
+        assert_eq!(config.target_fps, 30);
+    }
+
+    #[tokio::test]
+    async fn dmabuf_start_stream_not_available() {
+        let capture = DmabufCapture::with_defaults(100, 100);
+        let result = capture.start_stream(30);
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn dmabuf_stop_stream() {
+        let capture = DmabufCapture::with_defaults(100, 100);
+        let result = capture.stop_stream();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn dmabuf_is_capturing() {
+        let capture = DmabufCapture::with_defaults(100, 100);
+        assert!(!capture.is_capturing());
+    }
+
+    #[test]
+    fn dmabuf_tier() {
+        let capture = DmabufCapture::with_defaults(100, 100);
+        assert_eq!(capture.tier(), CaptureTier::Dmabuf);
+    }
+
+    #[test]
+    fn dmabuf_is_optimal() {
+        let capture = DmabufCapture::with_defaults(100, 100);
+        assert!(capture.is_optimal());
+    }
+
+    #[test]
+    fn dmabuf_is_available() {
+        let capture = DmabufCapture::with_defaults(100, 100);
+        assert!(capture.is_available());
+    }
+
+    #[test]
     fn dmabuf_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<DmabufCapture>();
+        assert_send_sync::<DmabufCaptureConfig>();
+        assert_send_sync::<DrmFormat>();
     }
 
     #[test]
     fn drm_format_construction() {
         let format = DrmFormat::new(0x34324742, DrmFormat::MODIFIER_LINEAR);
+        assert_eq!(format.fourcc, 0x34324742);
         assert_eq!(format.modifier, 0);
+    }
+
+    #[test]
+    fn drm_format_modifiers() {
+        assert_eq!(DrmFormat::MODIFIER_LINEAR, 0);
+        assert_eq!(DrmFormat::MODIFIER_INVALID, 0x00ff_ffff_ffff_ffff);
+    }
+
+    #[test]
+    fn drm_format_clone() {
+        let format = DrmFormat::new(0x12345678, 0);
+        let cloned = format.clone();
+        assert_eq!(format, cloned);
+    }
+
+    #[test]
+    fn drm_format_eq() {
+        let f1 = DrmFormat::new(0x12345678, 0);
+        let f2 = DrmFormat::new(0x12345678, 0);
+        let f3 = DrmFormat::new(0x12345678, 1);
+        
+        assert_eq!(f1, f2);
+        assert_ne!(f1, f3);
+    }
+
+    #[test]
+    fn dmabuf_with_custom_formats() {
+        let formats = vec![
+            DrmFormat::new(FrameFormat::Rgba8888.fourcc(), DrmFormat::MODIFIER_LINEAR),
+            DrmFormat::new(FrameFormat::Bgra8888.fourcc(), DrmFormat::MODIFIER_LINEAR),
+        ];
+        let config = DmabufCaptureConfig::default();
+        let capture = DmabufCapture::new(800, 600, formats, config);
+        
+        assert_eq!(capture.capabilities().tier, CaptureTier::Dmabuf);
     }
 }
 
