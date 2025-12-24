@@ -6,18 +6,19 @@
 
 ---
 
-## Current Phase: Upstream Submission
+## Current Phase: Test Coverage Expansion
 
-All development work complete. Ready to submit to System76.
+Building comprehensive test coverage for reproducible validation.
 
-### Upstream Checklist
+### Testing Progress
 
-- [x] Portal PR template ready (`docs/upstream-prs/PORTAL_PR.md`)
-- [x] Compositor PR template ready (`docs/upstream-prs/COMPOSITOR_PR.md`)
-- [x] System76 engagement message ready (`docs/upstream-prs/SYSTEM76_MESSAGE.md`)
-- [ ] Push to GitHub
-- [ ] Post to COSMIC chat
-- [ ] Submit PRs
+- [x] Core unit tests (167 passing)
+- [x] D-Bus integration test harness (5 tests)
+- [x] PortalCore refactored for testability
+- [ ] Reach 90% coverage target
+- [ ] E2E demonstration tests
+- [ ] Chaos/fuzz testing
+- [ ] Security audit
 
 ---
 
@@ -63,8 +64,9 @@ All development work complete. Ready to submit to System76.
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | 7,732 |
-| Unit tests | 92 |
+| Lines of Rust | ~8,000 |
+| Unit tests | 167 |
+| Integration tests | 5 |
 | Crates | 5 |
 | Capture tiers | 3 |
 | Session modes | 4 |
@@ -86,11 +88,14 @@ All development work complete. Ready to submit to System76.
 ## Test Results
 
 ```
-$ cargo test --workspace
+$ cargo test --workspace --lib
 
-running 92 tests
-...
-test result: ok. 92 passed; 0 failed
+ion-compositor: 69 passed
+ion-core:       44 passed
+ion-portal:     48 passed
+ion-test-substrate: 6 passed
+──────────────────────────────
+Total: 167 passed
 ```
 
 ### Capability Check (Host)
