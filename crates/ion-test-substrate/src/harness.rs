@@ -311,8 +311,8 @@ impl TestHarness {
         )
         .await?;
 
-        // Give time for events to propagate
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        // Wait for events to be captured (no sleep!)
+        self.compositor.wait_for_events(2).await;
 
         // Close
         self.close_session(&session).await?;

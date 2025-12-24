@@ -21,11 +21,31 @@
 use std::time::Duration;
 
 use ion_core::device::DeviceType;
-use ion_core::event::{ButtonState, KeyState};
+use ion_core::event::{ButtonState, InputEvent, KeyState};
 use ion_core::mode::RemoteDesktopMode;
 use ion_portal::core::{PortalCore, SelectDevicesRequest, StartSessionRequest};
 use ion_portal::session_manager::{SessionManager, SessionManagerConfig};
+use tokio::sync::mpsc;
 use tracing_subscriber::EnvFilter;
+
+/// Guard timeout for recv operations
+const RECV_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Helper to receive events with generous timeout
+async fn recv_n_events(
+    rx: &mut mpsc::Receiver<(ion_core::session::SessionId, InputEvent)>,
+    n: usize,
+) -> Vec<(ion_core::session::SessionId, InputEvent)> {
+    let mut events = Vec::with_capacity(n);
+    for _ in 0..n {
+        let event = tokio::time::timeout(RECV_TIMEOUT, rx.recv())
+            .await
+            .expect("Should not timeout")
+            .expect("Channel should not be closed");
+        events.push(event);
+    }
+    events
+}
 
 fn init_tracing() {
     let _ = tracing_subscriber::fmt()
@@ -83,17 +103,11 @@ async fn security_session_isolation() {
     assert!(portal.notify_pointer_motion(session_b, 1.0, 1.0).await.is_ok());
     assert!(portal.notify_keyboard_keycode(session_b, 30, KeyState::Pressed).await.is_err());
     
-    // Verify events go to correct sessions
-    let mut a_events = 0;
-    let mut b_events = 0;
+    // Verify events go to correct sessions (exactly 2 events expected)
+    let events = recv_n_events(&mut rx, 2).await;
     
-    while let Ok(Some((id, _))) = tokio::time::timeout(Duration::from_millis(50), rx.recv()).await {
-        if id.as_str() == session_a {
-            a_events += 1;
-        } else if id.as_str() == session_b {
-            b_events += 1;
-        }
-    }
+    let a_events = events.iter().filter(|(id, _)| id.as_str() == session_a).count();
+    let b_events = events.iter().filter(|(id, _)| id.as_str() == session_b).count();
     
     assert_eq!(a_events, 1, "Session A should have 1 keyboard event");
     assert_eq!(b_events, 1, "Session B should have 1 pointer event");

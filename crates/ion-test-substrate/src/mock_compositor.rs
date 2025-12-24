@@ -11,7 +11,7 @@ use std::time::Instant;
 
 use ion_core::event::InputEvent;
 use ion_core::session::SessionId;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{mpsc, watch, RwLock};
 use tracing::{debug, info};
 
 /// A captured input event with metadata.
@@ -36,6 +36,9 @@ pub struct MockCompositor {
     events: Arc<RwLock<Vec<CapturedEvent>>>,
     event_tx: mpsc::Sender<(SessionId, InputEvent)>,
     sequence: Arc<RwLock<u64>>,
+    /// Watch channel for event count - tests can wait for specific counts
+    count_tx: Arc<watch::Sender<usize>>,
+    count_rx: watch::Receiver<usize>,
 }
 
 impl MockCompositor {
@@ -46,11 +49,14 @@ impl MockCompositor {
     #[must_use]
     pub fn new() -> (Self, mpsc::Receiver<(SessionId, InputEvent)>) {
         let (event_tx, event_rx) = mpsc::channel(1024);
+        let (count_tx, count_rx) = watch::channel(0);
 
         let compositor = Self {
             events: Arc::new(RwLock::new(Vec::new())),
             event_tx,
             sequence: Arc::new(RwLock::new(0)),
+            count_tx: Arc::new(count_tx),
+            count_rx,
         };
 
         (compositor, event_rx)
@@ -77,7 +83,29 @@ impl MockCompositor {
         };
 
         debug!(?captured, "Captured event");
-        self.events.write().await.push(captured);
+        let mut events = self.events.write().await;
+        events.push(captured);
+        let count = events.len();
+        drop(events);
+        
+        // Notify watchers of new count
+        let _ = self.count_tx.send(count);
+    }
+    
+    /// Wait until at least `n` events have been captured.
+    ///
+    /// Returns immediately if already at or above the count.
+    /// This is the preferred way to synchronize in tests instead of sleeping.
+    pub async fn wait_for_events(&self, n: usize) {
+        let mut rx = self.count_rx.clone();
+        loop {
+            if *rx.borrow() >= n {
+                return;
+            }
+            if rx.changed().await.is_err() {
+                return; // Channel closed
+            }
+        }
     }
 
     /// Get all captured events.
@@ -100,6 +128,7 @@ impl MockCompositor {
     pub async fn clear(&self) {
         self.events.write().await.clear();
         *self.sequence.write().await = 0;
+        let _ = self.count_tx.send(0);
     }
 
     /// Get event count.
@@ -132,7 +161,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_capture_events() {
-        let (compositor, mut rx) = MockCompositor::new();
+        let (compositor, rx) = MockCompositor::new();
         let tx = compositor.event_sender();
 
         // Spawn capture loop
@@ -156,13 +185,21 @@ mod tests {
         .await
         .unwrap();
 
-        // Give time for events to be processed
-        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        // Wait for events to be processed (no sleep!)
+        compositor.wait_for_events(2).await;
 
         let events = compositor.captured_events().await;
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].sequence, 1);
         assert_eq!(events[1].sequence, 2);
+    }
+    
+    #[tokio::test]
+    async fn test_wait_for_events_immediate() {
+        let (compositor, _rx) = MockCompositor::new();
+        
+        // Should return immediately when already at count
+        compositor.wait_for_events(0).await;
     }
 }
 

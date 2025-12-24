@@ -21,7 +21,28 @@ use ion_core::event::{ButtonState, InputEvent, KeyState};
 use ion_core::mode::RemoteDesktopMode;
 use ion_portal::core::{PortalCore, SelectDevicesRequest, StartSessionRequest};
 use ion_portal::session_manager::{SessionManager, SessionManagerConfig};
+use tokio::sync::mpsc;
 use tracing_subscriber::EnvFilter;
+
+/// Guard timeout for recv operations - generous to avoid flaky tests
+const RECV_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Helper to receive an event with a generous timeout guard
+async fn recv_event(rx: &mut mpsc::Receiver<(ion_core::session::SessionId, InputEvent)>) -> (ion_core::session::SessionId, InputEvent) {
+    tokio::time::timeout(RECV_TIMEOUT, rx.recv())
+        .await
+        .expect("Event receive should not timeout")
+        .expect("Channel should not be closed")
+}
+
+/// Helper to receive N events
+async fn recv_n_events(rx: &mut mpsc::Receiver<(ion_core::session::SessionId, InputEvent)>, n: usize) -> Vec<(ion_core::session::SessionId, InputEvent)> {
+    let mut events = Vec::with_capacity(n);
+    for _ in 0..n {
+        events.push(recv_event(rx).await);
+    }
+    events
+}
 
 /// Initialize tracing for tests
 fn init_tracing() {
@@ -73,12 +94,8 @@ async fn e2e_basic_session_lifecycle() {
     // Step 4: Send some input events
     portal.notify_pointer_motion(session_id, 100.0, 50.0).await.unwrap();
     
-    // Verify event was forwarded
-    let received = tokio::time::timeout(Duration::from_millis(100), event_rx.recv())
-        .await
-        .expect("Should receive event")
-        .expect("Channel should not be closed");
-    
+    // Verify event was forwarded (no short timeout - use generous guard)
+    let received = recv_event(&mut event_rx).await;
     assert!(matches!(received.1, InputEvent::PointerMotion { .. }));
     
     // Step 5: Close session
@@ -157,18 +174,9 @@ async fn e2e_input_event_flow() {
     portal.notify_touch_up(session_id, 0).await.unwrap();
     event_count += 1;
     
-    // Verify all events were received
-    let mut received_count = 0;
-    for _ in 0..event_count {
-        if tokio::time::timeout(Duration::from_millis(100), event_rx.recv())
-            .await
-            .is_ok()
-        {
-            received_count += 1;
-        }
-    }
-    
-    assert_eq!(received_count, event_count, "All events should be received");
+    // Verify all events were received (no short timeout)
+    let events = recv_n_events(&mut event_rx, event_count).await;
+    assert_eq!(events.len(), event_count, "All events should be received");
     
     println!("✅ E2E: Input event flow ({event_count} events) completed successfully");
 }
@@ -223,15 +231,12 @@ async fn e2e_multi_session() {
             .unwrap();
     }
     
-    // Verify events from different sessions
-    let mut session_events: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    // Verify events from different sessions (no short timeout)
+    let events = recv_n_events(&mut event_rx, sessions.len()).await;
     
-    for _ in 0..sessions.len() {
-        if let Ok(Some((session_id, _event))) =
-            tokio::time::timeout(Duration::from_millis(100), event_rx.recv()).await
-        {
-            *session_events.entry(session_id.to_string()).or_insert(0) += 1;
-        }
+    let mut session_events: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    for (session_id, _) in events {
+        *session_events.entry(session_id.to_string()).or_insert(0) += 1;
     }
     
     assert_eq!(session_events.len(), 3, "Events from all 3 sessions should be received");
@@ -417,8 +422,8 @@ async fn e2e_stress_test() {
     };
     portal.start_session(start_req).await.unwrap();
     
-    // Send 100 events rapidly (reduced for faster tests)
-    let event_count = 100;
+    // Send 100 events rapidly
+    let event_count: usize = 100;
     let start = std::time::Instant::now();
     
     for i in 0..event_count {
@@ -429,17 +434,8 @@ async fn e2e_stress_test() {
     
     let send_duration = start.elapsed();
     
-    // Drain receiver
-    let mut received = 0;
-    while tokio::time::timeout(Duration::from_millis(10), event_rx.recv())
-        .await
-        .is_ok()
-    {
-        received += 1;
-        if received >= event_count {
-            break;
-        }
-    }
+    // Receive all events (no short timeout drain)
+    let events = recv_n_events(&mut event_rx, event_count).await;
     
     let total_duration = start.elapsed();
     
@@ -448,11 +444,9 @@ async fn e2e_stress_test() {
         event_count, total_duration, send_duration
     );
     
-    assert!(
-        received >= event_count * 9 / 10,
-        "Should receive at least 90% of events (got {}/{})",
-        received,
-        event_count
+    assert_eq!(
+        events.len(), event_count,
+        "Should receive all events"
     );
 }
 
