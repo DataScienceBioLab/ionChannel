@@ -13,12 +13,40 @@
 | 4 | Gap Discovery (VM/cloud broken) | ✅ Identified |
 | 5 | Tiered Capture | ✅ Complete |
 | 6 | Input-Only Mode | ✅ Complete |
-| **7** | **Upstream Submission** | 🔄 **Ready** |
-| 8 | RustDesk Validation | 🔲 After merge |
+| **7** | **Test Coverage (321 tests)** | 🔄 **In Progress** |
+| 8 | Upstream Submission | 🔲 After validation |
+| 9 | RustDesk Validation | 🔲 After merge |
 
 ---
 
-## Phase 7: Upstream Submission 🔄
+## Phase 7: Test Coverage & Validation 🔄
+
+### Current Progress
+
+| Task | Status |
+|------|--------|
+| Unit tests (321) | ✅ Complete |
+| D-Bus integration tests | ✅ Complete |
+| PortalCore refactored | ✅ Complete |
+| Module coverage | ✅ 15+ test files |
+| Coverage measurement | 🔲 Next |
+| E2E demonstration | 🔲 Planned |
+| Security audit | 🔲 Planned |
+
+### Test Distribution
+
+```
+ion-compositor:    162 tests
+ion-core:           95 tests  
+ion-portal:         58 tests
+ion-test-substrate:  6 tests
+─────────────────────────────
+Total:             321 tests
+```
+
+---
+
+## Phase 8: Upstream Submission (After Validation)
 
 ### Deliverables Ready
 
@@ -30,19 +58,9 @@
 
 ### Next Steps
 
-1. **Push to GitHub**
-   ```bash
-   gh repo create DataScienceBioLab/ionChannel --public
-   git push -u origin master
-   ```
-
-2. **Engage System76**
-   - Post message to https://chat.pop-os.org/
-   - Reference issue: https://github.com/pop-os/cosmic-comp/issues/980
-
-3. **Submit PRs**
-   - `xdg-desktop-portal-cosmic`: RemoteDesktop interface + tiered capture
-   - `cosmic-comp`: VirtualInputSink + EIS integration
+1. **Complete validation** (E2E tests, coverage %)
+2. **Engage System76** via chat.pop-os.org
+3. **Submit PRs** to xdg-desktop-portal-cosmic and cosmic-comp
 
 ---
 
@@ -98,7 +116,7 @@ ion-compositor/src/capabilities.rs  # CapabilityProvider
 
 ---
 
-## Phase 8: RustDesk Validation (Future)
+## Phase 9: RustDesk Validation (Future)
 
 ### Test Matrix
 

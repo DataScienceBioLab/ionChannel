@@ -57,8 +57,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | 7,732 |
-| Unit tests | 92 |
+| Lines of Rust | ~10,000 |
+| Unit tests | 321 |
+| Integration tests | 5 |
 | Crates | 5 |
 | Capture tiers | 3 |
 
@@ -72,6 +73,8 @@ First release for upstream contribution.
 
 | Date | Milestone |
 |------|-----------|
+| Dec 24, 2024 | 321 tests, full module coverage |
+| Dec 23, 2024 | D-Bus integration tests |
 | Dec 2024 | Tiered capture complete |
 | Dec 2024 | VM gap discovered |
 | Dec 2024 | COSMIC validation complete |

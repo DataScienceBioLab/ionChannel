@@ -2,7 +2,7 @@
 
 > Development status tracker
 
-**Last Updated:** 2024-12-23
+**Last Updated:** 2024-12-24
 
 ---
 
@@ -12,10 +12,11 @@ Building comprehensive test coverage for reproducible validation.
 
 ### Testing Progress
 
-- [x] Core unit tests (167 passing)
+- [x] Core unit tests (321 passing)
 - [x] D-Bus integration test harness (5 tests)
 - [x] PortalCore refactored for testability
-- [ ] Reach 90% coverage target
+- [x] Full module coverage (15+ test files)
+- [ ] Measure coverage % (target: 90%)
 - [ ] E2E demonstration tests
 - [ ] Chaos/fuzz testing
 - [ ] Security audit
@@ -29,23 +30,22 @@ Building comprehensive test coverage for reproducible validation.
 | Task | Status |
 |------|--------|
 | `ScreenCapture` trait | ✅ |
-| `DmabufCapture` (Tier 1) | ✅ |
-| `ShmCapture` (Tier 2) | ✅ |
-| `CpuCapture` (Tier 3) | ✅ |
-| `TierSelector` | ✅ |
-| Frame format handling | ✅ |
-| 25 capture tests | ✅ |
+| `DmabufCapture` (Tier 1) | ✅ 20 tests |
+| `ShmCapture` (Tier 2) | ✅ 20 tests |
+| `CpuCapture` (Tier 3) | ✅ 21 tests |
+| `TierSelector` | ✅ 20 tests |
+| Frame format handling | ✅ 22 tests |
+| Capture module | ✅ 18 tests |
 
 ### Input-Only Mode ✅
 
 | Task | Status |
 |------|--------|
-| `RemoteDesktopMode` enum | ✅ |
-| `SessionCapabilities` struct | ✅ |
-| `CapabilityProvider` | ✅ |
-| Environment detection (VM/GPU) | ✅ |
-| Mode reporting in portal | ✅ |
-| 8 mode tests | ✅ |
+| `RemoteDesktopMode` enum | ✅ 17 tests |
+| `SessionCapabilities` struct | ✅ included |
+| `CapabilityProvider` | ✅ 12 tests |
+| Environment detection (VM/GPU) | ✅ included |
+| Mode reporting in portal | ✅ included |
 
 ### Core Infrastructure ✅
 
@@ -119,4 +119,4 @@ Input Available: Yes
 
 ---
 
-*Updated: 2024-12-23*
+*Updated: 2024-12-24*
