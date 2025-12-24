@@ -4,11 +4,12 @@
 project: ionChannel
 identity: DataScienceBioLab
 type: upstream-contribution
-status: planning
-license: AGPL-3.0 / GPL-3.0 (mixed)
+status: implementation
+license: AGPL-3.0-or-later (System76 GPL-3.0 exception)
 language: rust
 workspace: /home/nestgate/Development/syntheticChemistry/ionChannel
 parent: syntheticChemistry
+ecosystem: ecoPrimals (via songbird integration)
 ```
 
 ## Naming Context
@@ -87,6 +88,7 @@ THEN:   RustDesk and similar tools cannot inject mouse/keyboard on COSMIC
 | 02 | Compositor Input | `pop-os/cosmic-comp` | `02_COMPOSITOR_INPUT.md` | P0 |
 | 03 | RustDesk Integration | `rustdesk/rustdesk` | `03_RUSTDESK_INTEGRATION.md` | P1 |
 | 04 | Pre-Login RDP | `pop-os/cosmic-greeter` | `04_PRELOGIN_RDP.md` | P2 |
+| 05 | Ecosystem Integration | `ecoPrimals/songBird` | `05_ECOSYSTEM_INTEGRATION.md` | P1 |
 
 ## Success Criteria
 
@@ -175,8 +177,10 @@ attribution:
 ```
 ionChannel/
 ├── README.md
-├── LICENSE.md                   # Mixed AGPL-3.0 / GPL-3.0
+├── LICENSE.md                       # AGPL-3.0 with System76 exception
 ├── ROADMAP.md
+├── ARCHITECTURE.md                  # Tiered capture design
+├── PROGRESS.md                      # Development tracker
 ├── Cargo.toml
 │
 ├── specs/
@@ -184,10 +188,20 @@ ionChannel/
 │   ├── 01_PORTAL_REMOTE_DESKTOP.md  # Portal implementation spec
 │   ├── 02_COMPOSITOR_INPUT.md       # Compositor input injection spec
 │   ├── 03_RUSTDESK_INTEGRATION.md   # RustDesk compatibility spec
-│   └── 04_PRELOGIN_RDP.md           # Pre-login remote access spec
+│   ├── 04_PRELOGIN_RDP.md           # Pre-login remote access spec
+│   └── 05_ECOSYSTEM_INTEGRATION.md  # Songbird/ecoPrimals integration
+│
+├── docs/
+│   ├── SONGBIRD_INTEGRATION.md      # Detailed integration guide
+│   ├── TESTING_PLAN.md              # Test coverage strategy
+│   └── upstream-prs/                # PR templates for System76
 │
 ├── crates/
-│   └── portal-test-client/          # Portal diagnostic tool
+│   ├── ion-core/                    # Core types (modes, sessions, events)
+│   ├── ion-portal/                  # D-Bus RemoteDesktop portal
+│   ├── ion-compositor/              # Tiered capture + input injection
+│   ├── ion-test-substrate/          # Headless validation harness
+│   └── portal-test-client/          # CLI diagnostic tool
 │
 └── upstream/                        # Reference repos (gitignored)
 ```
