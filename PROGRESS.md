@@ -30,7 +30,7 @@ See: [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
 - [x] Measure coverage % (80.22% achieved)
 - [x] E2E demonstration tests (7 scenarios)
 - [x] Chaos/fuzz testing (15 scenarios)
-- [ ] Security audit
+- [x] Security audit (12 tests)
 
 ### Coverage Breakdown
 
@@ -91,6 +91,7 @@ Note: ion-portal has low coverage due to D-Bus interface methods that require a 
 | Unit tests | 357 |
 | E2E tests | 7 |
 | Chaos tests | 15 |
+| Security tests | 12 |
 | D-Bus tests | 5 |
 | Coverage | 80.22% |
 | Crates | 5 |
@@ -127,10 +128,11 @@ Unit tests:
 Integration tests:
   e2e_demonstration:   7 passed
   chaos_tests:        15 passed
+  security_tests:     12 passed
   ─────────────────────────────────
-  Subtotal: 22 integration tests
+  Subtotal: 34 integration tests
 
-Total: 379 tests (80.22% coverage)
+Total: 391 tests (80.22% coverage)
 ```
 
 ### Capability Check (Host)
