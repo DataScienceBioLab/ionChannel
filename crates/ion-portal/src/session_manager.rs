@@ -234,8 +234,179 @@ mod tests {
     }
 
     #[test]
+    fn config_default() {
+        let config = SessionManagerConfig::default();
+        assert_eq!(config.max_sessions, 10);
+        assert_eq!(config.event_buffer_size, 256);
+    }
+
+    #[test]
+    fn config_custom() {
+        let config = SessionManagerConfig {
+            max_sessions: 5,
+            event_buffer_size: 128,
+        };
+        assert_eq!(config.max_sessions, 5);
+        assert_eq!(config.event_buffer_size, 128);
+    }
+
+    #[tokio::test]
+    async fn get_session() {
+        let (manager, _rx) = SessionManager::new(SessionManagerConfig::default());
+
+        manager
+            .create_session(SessionId::new("/test/get"), "app".into())
+            .await
+            .unwrap();
+
+        let session = manager.get_session(&SessionId::new("/test/get")).await;
+        assert!(session.is_some());
+
+        let no_session = manager.get_session(&SessionId::new("/test/nonexistent")).await;
+        assert!(no_session.is_none());
+    }
+
+    #[tokio::test]
+    async fn get_session_by_path() {
+        let (manager, _rx) = SessionManager::new(SessionManagerConfig::default());
+
+        manager
+            .create_session(SessionId::new("/test/path"), "app".into())
+            .await
+            .unwrap();
+
+        let session = manager.get_session_by_path("/test/path").await;
+        assert!(session.is_some());
+
+        let no_session = manager.get_session_by_path("/test/missing").await;
+        assert!(no_session.is_none());
+    }
+
+    #[tokio::test]
+    async fn session_ids() {
+        let (manager, _rx) = SessionManager::new(SessionManagerConfig::default());
+
+        manager
+            .create_session(SessionId::new("/test/a"), "app".into())
+            .await
+            .unwrap();
+        manager
+            .create_session(SessionId::new("/test/b"), "app".into())
+            .await
+            .unwrap();
+
+        let ids = manager.session_ids().await;
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&SessionId::new("/test/a")));
+        assert!(ids.contains(&SessionId::new("/test/b")));
+    }
+
+    #[tokio::test]
+    async fn close_nonexistent_session() {
+        let (manager, _rx) = SessionManager::new(SessionManagerConfig::default());
+
+        let result = manager.close_session(&SessionId::new("/nonexistent")).await;
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn close_all() {
+        let (manager, _rx) = SessionManager::new(SessionManagerConfig::default());
+
+        manager
+            .create_session(SessionId::new("/test/1"), "app".into())
+            .await
+            .unwrap();
+        manager
+            .create_session(SessionId::new("/test/2"), "app".into())
+            .await
+            .unwrap();
+
+        assert_eq!(manager.session_count().await, 2);
+
+        manager.close_all().await;
+        assert_eq!(manager.session_count().await, 0);
+    }
+
+    #[tokio::test]
+    async fn duplicate_session() {
+        let (manager, _rx) = SessionManager::new(SessionManagerConfig::default());
+
+        manager
+            .create_session(SessionId::new("/test/dup"), "app".into())
+            .await
+            .unwrap();
+
+        // Try to create duplicate
+        let result = manager
+            .create_session(SessionId::new("/test/dup"), "app2".into())
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn manager_clone() {
+        let (manager1, _rx) = SessionManager::new(SessionManagerConfig::default());
+        let manager2 = manager1.clone();
+
+        manager1
+            .create_session(SessionId::new("/test/shared"), "app".into())
+            .await
+            .unwrap();
+
+        // Both managers should see the session
+        assert_eq!(manager1.session_count().await, 1);
+        assert_eq!(manager2.session_count().await, 1);
+
+        // Close from cloned manager
+        manager2.close_session(&SessionId::new("/test/shared")).await;
+
+        // Both should see it closed
+        assert_eq!(manager1.session_count().await, 0);
+        assert_eq!(manager2.session_count().await, 0);
+    }
+
+    #[tokio::test]
+    async fn multiple_events_forwarded() {
+        let (manager, mut rx) = SessionManager::new(SessionManagerConfig::default());
+
+        let session = manager
+            .create_session(SessionId::new("/test/events"), "app".into())
+            .await
+            .unwrap();
+
+        session
+            .select_devices(ion_core::DeviceType::desktop_standard())
+            .await
+            .unwrap();
+        session.start().await.unwrap();
+
+        // Send multiple events
+        session
+            .send_event(ion_core::InputEvent::pointer_motion(1.0, 1.0))
+            .await
+            .unwrap();
+        session
+            .send_event(ion_core::InputEvent::pointer_motion(2.0, 2.0))
+            .await
+            .unwrap();
+        session
+            .send_event(ion_core::InputEvent::pointer_motion(3.0, 3.0))
+            .await
+            .unwrap();
+
+        // Receive all
+        for _ in 0..3 {
+            let (id, event) = rx.recv().await.unwrap();
+            assert_eq!(id.as_str(), "/test/events");
+            assert!(event.is_pointer());
+        }
+    }
+
+    #[test]
     fn session_manager_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<SessionManager>();
+        assert_send_sync::<SessionManagerConfig>();
     }
 }
