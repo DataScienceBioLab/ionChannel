@@ -23,14 +23,26 @@ See: [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
 
 ### Testing Progress
 
-- [x] Core unit tests (321 passing)
+- [x] Core unit tests (357 passing)
 - [x] D-Bus integration test harness (5 tests)
 - [x] PortalCore refactored for testability
 - [x] Full module coverage (15+ test files)
-- [ ] Measure coverage % (target: 90%)
+- [x] Measure coverage % (80.22% achieved)
 - [ ] E2E demonstration tests
 - [ ] Chaos/fuzz testing
 - [ ] Security audit
+
+### Coverage Breakdown
+
+| Crate | Coverage | Tests |
+|-------|----------|-------|
+| ion-compositor | 81% | 181 |
+| ion-core | 99% | 95 |
+| ion-portal | 66% | 58 |
+| ion-test-substrate | 78% | 23 |
+| **Total** | **80.22%** | **357** |
+
+Note: ion-portal has low coverage due to D-Bus interface methods that require a real D-Bus session. Core logic in `core.rs` is 100% covered.
 
 ---
 
@@ -76,8 +88,9 @@ See: [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
 | Metric | Value |
 |--------|-------|
 | Lines of Rust | ~10,000 |
-| Unit tests | 321 |
+| Unit tests | 357 |
 | Integration tests | 5 |
+| Coverage | 80.22% |
 | Crates | 5 |
 | Capture tiers | 3 |
 | Session modes | 4 |
@@ -101,12 +114,12 @@ See: [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
 ```
 $ cargo test --workspace --lib
 
-ion-compositor:    162 passed
+ion-compositor:    181 passed
 ion-core:           95 passed
 ion-portal:         58 passed
-ion-test-substrate:  6 passed
+ion-test-substrate: 23 passed
 ──────────────────────────────────
-Total: 321 passing
+Total: 357 passing (80.22% coverage)
 ```
 
 ### Capability Check (Host)
