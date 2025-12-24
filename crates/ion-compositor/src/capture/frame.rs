@@ -295,7 +295,37 @@ mod tests {
     #[test]
     fn frame_format_bytes() {
         assert_eq!(FrameFormat::Bgra8888.bytes_per_pixel(), 4);
+        assert_eq!(FrameFormat::Rgba8888.bytes_per_pixel(), 4);
+        assert_eq!(FrameFormat::Xrgb8888.bytes_per_pixel(), 4);
+        assert_eq!(FrameFormat::Xbgr8888.bytes_per_pixel(), 4);
         assert_eq!(FrameFormat::Rgb888.bytes_per_pixel(), 3);
+        assert_eq!(FrameFormat::Bgr888.bytes_per_pixel(), 3);
+    }
+
+    #[test]
+    fn frame_format_has_alpha() {
+        assert!(FrameFormat::Bgra8888.has_alpha());
+        assert!(FrameFormat::Rgba8888.has_alpha());
+        assert!(!FrameFormat::Xrgb8888.has_alpha());
+        assert!(!FrameFormat::Xbgr8888.has_alpha());
+        assert!(!FrameFormat::Rgb888.has_alpha());
+        assert!(!FrameFormat::Bgr888.has_alpha());
+    }
+
+    #[test]
+    fn frame_format_fourcc() {
+        assert_eq!(FrameFormat::Bgra8888.fourcc(), 0x34324742);
+        assert_eq!(FrameFormat::Rgba8888.fourcc(), 0x34324152);
+    }
+
+    #[test]
+    fn frame_format_display() {
+        assert_eq!(FrameFormat::Bgra8888.to_string(), "BGRA8888");
+        assert_eq!(FrameFormat::Rgba8888.to_string(), "RGBA8888");
+        assert_eq!(FrameFormat::Xrgb8888.to_string(), "XRGB8888");
+        assert_eq!(FrameFormat::Xbgr8888.to_string(), "XBGR8888");
+        assert_eq!(FrameFormat::Rgb888.to_string(), "RGB888");
+        assert_eq!(FrameFormat::Bgr888.to_string(), "BGR888");
     }
 
     #[test]
@@ -315,6 +345,107 @@ mod tests {
         assert_eq!(metadata.height, 1080);
         assert_eq!(metadata.stride, 1920 * 4);
         assert!(metadata.capture_latency() >= Duration::from_millis(1));
+    }
+
+    #[test]
+    fn frame_metadata_builder_defaults() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(100, 100)
+            .build();
+
+        assert_eq!(metadata.sequence, 0);
+        assert_eq!(metadata.format, FrameFormat::Bgra8888);
+        assert_eq!(metadata.stride, 100 * 4);
+        assert_eq!(metadata.output_index, 0);
+        assert!(metadata.pipewire_node.is_none());
+    }
+
+    #[test]
+    fn frame_metadata_builder_all_fields() {
+        let metadata = FrameMetadataBuilder::new()
+            .sequence(100)
+            .dimensions(800, 600)
+            .stride(3200)
+            .format(FrameFormat::Rgba8888)
+            .pipewire_node(42)
+            .output_index(1)
+            .build();
+
+        assert_eq!(metadata.sequence, 100);
+        assert_eq!(metadata.width, 800);
+        assert_eq!(metadata.height, 600);
+        assert_eq!(metadata.stride, 3200);
+        assert_eq!(metadata.format, FrameFormat::Rgba8888);
+        assert_eq!(metadata.pipewire_node, Some(42));
+        assert_eq!(metadata.output_index, 1);
+    }
+
+    #[test]
+    fn frame_metadata_frame_size() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(1920, 1080)
+            .stride(7680) // 1920 * 4
+            .build();
+
+        assert_eq!(metadata.frame_size(), 7680 * 1080);
+    }
+
+    #[test]
+    fn frame_metadata_age() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(100, 100)
+            .build();
+
+        std::thread::sleep(Duration::from_millis(5));
+        assert!(metadata.age() >= Duration::from_millis(5));
+    }
+
+    #[test]
+    fn capture_frame_new() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(10, 10)
+            .build();
+        let data = vec![0u8; 400];
+        let frame = CaptureFrame::new(metadata, data);
+
+        assert_eq!(frame.width(), 10);
+        assert_eq!(frame.height(), 10);
+        assert_eq!(frame.data().len(), 400);
+    }
+
+    #[test]
+    fn capture_frame_with_shared_data() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(10, 10)
+            .build();
+        let shared = Arc::new(vec![0u8; 400]);
+        let frame = CaptureFrame::with_shared_data(metadata, shared.clone());
+
+        assert!(Arc::ptr_eq(&frame.shared_data(), &shared));
+    }
+
+    #[test]
+    fn capture_frame_format() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(10, 10)
+            .format(FrameFormat::Rgba8888)
+            .build();
+        let frame = CaptureFrame::new(metadata, vec![0u8; 400]);
+
+        assert_eq!(frame.format(), FrameFormat::Rgba8888);
+    }
+
+    #[test]
+    fn capture_frame_is_fresh() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(10, 10)
+            .build();
+        let frame = CaptureFrame::new(metadata, vec![0u8; 400]);
+
+        assert!(frame.is_fresh(Duration::from_secs(1)));
+        std::thread::sleep(Duration::from_millis(10));
+        assert!(frame.is_fresh(Duration::from_secs(1)));
+        assert!(!frame.is_fresh(Duration::from_millis(5)));
     }
 
     #[test]
@@ -341,6 +472,47 @@ mod tests {
     }
 
     #[test]
+    fn frame_conversion_same_format() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(2, 2)
+            .format(FrameFormat::Bgra8888)
+            .build();
+        let data = vec![0u8; 16];
+        let frame = CaptureFrame::new(metadata, data);
+
+        let converted = frame.convert_to(FrameFormat::Bgra8888);
+        assert!(converted.is_some());
+    }
+
+    #[test]
+    fn frame_conversion_unsupported() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(2, 2)
+            .format(FrameFormat::Bgra8888)
+            .build();
+        let data = vec![0u8; 16];
+        let frame = CaptureFrame::new(metadata, data);
+
+        // RGB888 conversion not supported
+        let converted = frame.convert_to(FrameFormat::Rgb888);
+        assert!(converted.is_none());
+    }
+
+    #[test]
+    fn frame_conversion_rgba_to_bgra() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(1, 1)
+            .format(FrameFormat::Rgba8888)
+            .build();
+        let data = vec![255, 128, 64, 255]; // RGBA
+        let frame = CaptureFrame::new(metadata, data);
+
+        let converted = frame.convert_to(FrameFormat::Bgra8888).unwrap();
+        assert_eq!(converted.data()[0], 64);  // Blue
+        assert_eq!(converted.data()[2], 255); // Red
+    }
+
+    #[test]
     fn frame_shared_data() {
         let metadata = FrameMetadataBuilder::new().dimensions(10, 10).build();
         let frame = CaptureFrame::new(metadata, vec![0u8; 400]);
@@ -349,6 +521,29 @@ mod tests {
         let shared2 = frame.shared_data();
 
         assert!(Arc::ptr_eq(&shared1, &shared2));
+    }
+
+    #[test]
+    fn frame_clone() {
+        let metadata = FrameMetadataBuilder::new()
+            .dimensions(10, 10)
+            .sequence(42)
+            .build();
+        let frame = CaptureFrame::new(metadata, vec![1u8; 400]);
+        let cloned = frame.clone();
+
+        assert_eq!(frame.width(), cloned.width());
+        assert_eq!(frame.metadata.sequence, cloned.metadata.sequence);
+        // Cloned data shares the same Arc
+        assert!(Arc::ptr_eq(&frame.shared_data(), &cloned.shared_data()));
+    }
+
+    #[test]
+    fn frame_format_is_send_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<FrameFormat>();
+        assert_send_sync::<FrameMetadata>();
+        assert_send_sync::<CaptureFrame>();
     }
 }
 
