@@ -283,10 +283,42 @@ mod tests {
     }
 
     #[test]
+    fn key_state_to_bool() {
+        assert!(bool::from(KeyState::Pressed));
+        assert!(!bool::from(KeyState::Released));
+    }
+
+    #[test]
+    fn key_state_from_u32() {
+        assert_eq!(KeyState::from(0u32), KeyState::Released);
+        assert_eq!(KeyState::from(1u32), KeyState::Pressed);
+        assert_eq!(KeyState::from(100u32), KeyState::Pressed);
+    }
+
+    #[test]
+    fn button_state_from_bool() {
+        assert_eq!(ButtonState::from(true), ButtonState::Pressed);
+        assert_eq!(ButtonState::from(false), ButtonState::Released);
+    }
+
+    #[test]
+    fn button_state_to_bool() {
+        assert!(bool::from(ButtonState::Pressed));
+        assert!(!bool::from(ButtonState::Released));
+    }
+
+    #[test]
     fn button_state_from_u32() {
         assert_eq!(ButtonState::from(0u32), ButtonState::Released);
         assert_eq!(ButtonState::from(1u32), ButtonState::Pressed);
         assert_eq!(ButtonState::from(42u32), ButtonState::Pressed);
+    }
+
+    #[test]
+    fn axis_from_u32() {
+        assert_eq!(Axis::from(0u32), Axis::Vertical);
+        assert_eq!(Axis::from(1u32), Axis::Horizontal);
+        assert_eq!(Axis::from(99u32), Axis::Horizontal);
     }
 
     #[test]
@@ -301,8 +333,105 @@ mod tests {
     }
 
     #[test]
+    fn pointer_motion_absolute_constructor() {
+        let event = InputEvent::pointer_motion_absolute(0, 100.0, 200.0);
+        assert!(event.is_pointer());
+        assert!(!event.is_keyboard());
+        assert!(!event.is_touch());
+    }
+
+    #[test]
+    fn pointer_button_constructor() {
+        let event = InputEvent::pointer_button(1, ButtonState::Pressed);
+        assert!(event.is_pointer());
+    }
+
+    #[test]
+    fn left_click_constructor() {
+        let down = InputEvent::left_click(true);
+        let up = InputEvent::left_click(false);
+        
+        assert!(down.is_pointer());
+        assert!(up.is_pointer());
+        
+        match down {
+            InputEvent::PointerButton { button, state } => {
+                assert_eq!(button, 0x110); // BTN_LEFT
+                assert_eq!(state, ButtonState::Pressed);
+            }
+            _ => panic!("Expected PointerButton"),
+        }
+        
+        match up {
+            InputEvent::PointerButton { button, state } => {
+                assert_eq!(button, 0x110);
+                assert_eq!(state, ButtonState::Released);
+            }
+            _ => panic!("Expected PointerButton"),
+        }
+    }
+
+    #[test]
+    fn touch_events() {
+        let down = InputEvent::TouchDown { stream: 0, slot: 0, x: 50.0, y: 100.0 };
+        let motion = InputEvent::TouchMotion { stream: 0, slot: 0, x: 60.0, y: 110.0 };
+        let up = InputEvent::TouchUp { slot: 0 };
+
+        assert!(down.is_touch());
+        assert!(motion.is_touch());
+        assert!(up.is_touch());
+
+        assert!(!down.is_pointer());
+        assert!(!motion.is_keyboard());
+    }
+
+    #[test]
+    fn pointer_axis_events() {
+        let smooth = InputEvent::PointerAxis { dx: 0.0, dy: -10.0 };
+        let discrete = InputEvent::PointerAxisDiscrete { axis: Axis::Vertical, steps: -1 };
+
+        assert!(smooth.is_pointer());
+        assert!(discrete.is_pointer());
+    }
+
+    #[test]
+    fn keyboard_keysym() {
+        let event = InputEvent::KeyboardKeysym { keysym: 0x61, state: KeyState::Pressed };
+        assert!(event.is_keyboard());
+        assert!(!event.is_pointer());
+        assert!(!event.is_touch());
+    }
+
+    #[test]
+    fn event_clone() {
+        let event = InputEvent::pointer_motion(5.0, 10.0);
+        let cloned = event.clone();
+        assert_eq!(event, cloned);
+    }
+
+    #[test]
+    fn event_debug() {
+        let event = InputEvent::pointer_motion(5.0, 10.0);
+        let debug = format!("{:?}", event);
+        assert!(debug.contains("PointerMotion"));
+    }
+
+    #[test]
     fn event_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<InputEvent>();
+        assert_send_sync::<KeyState>();
+        assert_send_sync::<ButtonState>();
+        assert_send_sync::<Axis>();
+    }
+
+    #[test]
+    fn state_repr_values() {
+        assert_eq!(KeyState::Released as u32, 0);
+        assert_eq!(KeyState::Pressed as u32, 1);
+        assert_eq!(ButtonState::Released as u32, 0);
+        assert_eq!(ButtonState::Pressed as u32, 1);
+        assert_eq!(Axis::Vertical as u32, 0);
+        assert_eq!(Axis::Horizontal as u32, 1);
     }
 }

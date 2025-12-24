@@ -206,6 +206,22 @@ mod tests {
     }
 
     #[test]
+    fn mode_is_active() {
+        assert!(RemoteDesktopMode::Full.is_active());
+        assert!(RemoteDesktopMode::ViewOnly.is_active());
+        assert!(RemoteDesktopMode::InputOnly.is_active());
+        assert!(!RemoteDesktopMode::None.is_active());
+    }
+
+    #[test]
+    fn mode_name() {
+        assert_eq!(RemoteDesktopMode::None.name(), "None");
+        assert_eq!(RemoteDesktopMode::ViewOnly.name(), "View Only");
+        assert_eq!(RemoteDesktopMode::InputOnly.name(), "Input Only");
+        assert_eq!(RemoteDesktopMode::Full.name(), "Full Control");
+    }
+
+    #[test]
     fn mode_from_capabilities() {
         assert_eq!(
             RemoteDesktopMode::from_capabilities(true, true),
@@ -240,6 +256,20 @@ mod tests {
     }
 
     #[test]
+    fn mode_from_invalid_u32() {
+        assert_eq!(RemoteDesktopMode::from(99u32), RemoteDesktopMode::None);
+        assert_eq!(RemoteDesktopMode::from(255u32), RemoteDesktopMode::None);
+    }
+
+    #[test]
+    fn mode_repr_values() {
+        assert_eq!(RemoteDesktopMode::None as u32, 0);
+        assert_eq!(RemoteDesktopMode::ViewOnly as u32, 1);
+        assert_eq!(RemoteDesktopMode::InputOnly as u32, 2);
+        assert_eq!(RemoteDesktopMode::Full as u32, 3);
+    }
+
+    #[test]
     fn session_capabilities_modes() {
         assert_eq!(SessionCapabilities::full().best_mode(), RemoteDesktopMode::Full);
         assert_eq!(SessionCapabilities::input_only().best_mode(), RemoteDesktopMode::InputOnly);
@@ -248,9 +278,77 @@ mod tests {
     }
 
     #[test]
+    fn session_capabilities_full() {
+        let caps = SessionCapabilities::full();
+        assert!(caps.capture_available);
+        assert!(caps.input_available);
+        assert!(caps.capture_tier.is_none());
+    }
+
+    #[test]
+    fn session_capabilities_input_only() {
+        let caps = SessionCapabilities::input_only();
+        assert!(!caps.capture_available);
+        assert!(caps.input_available);
+    }
+
+    #[test]
+    fn session_capabilities_view_only() {
+        let caps = SessionCapabilities::view_only();
+        assert!(caps.capture_available);
+        assert!(!caps.input_available);
+    }
+
+    #[test]
+    fn session_capabilities_none() {
+        let caps = SessionCapabilities::none();
+        assert!(!caps.capture_available);
+        assert!(!caps.input_available);
+    }
+
+    #[test]
+    fn capture_tier_info_debug() {
+        assert!(!format!("{:?}", CaptureTierInfo::Dmabuf).is_empty());
+        assert!(!format!("{:?}", CaptureTierInfo::Shm).is_empty());
+        assert!(!format!("{:?}", CaptureTierInfo::Cpu).is_empty());
+    }
+
+    #[test]
+    fn session_capabilities_with_tier() {
+        let caps = SessionCapabilities {
+            capture_available: true,
+            input_available: true,
+            capture_tier: Some(CaptureTierInfo::Dmabuf),
+        };
+        assert_eq!(caps.best_mode(), RemoteDesktopMode::Full);
+        assert_eq!(caps.capture_tier, Some(CaptureTierInfo::Dmabuf));
+    }
+
+    #[test]
     fn mode_display() {
         assert_eq!(RemoteDesktopMode::Full.to_string(), "Full Control");
         assert_eq!(RemoteDesktopMode::InputOnly.to_string(), "Input Only");
+        assert_eq!(RemoteDesktopMode::ViewOnly.to_string(), "View Only");
+        assert_eq!(RemoteDesktopMode::None.to_string(), "None");
+    }
+
+    #[test]
+    fn mode_is_send_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<RemoteDesktopMode>();
+        assert_send_sync::<SessionCapabilities>();
+        assert_send_sync::<CaptureTierInfo>();
+    }
+
+    #[test]
+    fn mode_clone_eq() {
+        let mode = RemoteDesktopMode::Full;
+        let cloned = mode.clone();
+        assert_eq!(mode, cloned);
+
+        let caps = SessionCapabilities::full();
+        let caps_cloned = caps.clone();
+        assert_eq!(caps, caps_cloned);
     }
 }
 

@@ -238,5 +238,88 @@ mod tests {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<CapabilityProvider>();
     }
+
+    #[test]
+    fn unprobed_mode_is_none() {
+        let provider = CapabilityProvider::new();
+        assert_eq!(provider.best_mode(), RemoteDesktopMode::None);
+    }
+
+    #[test]
+    fn unprobed_summary_says_not_probed() {
+        let provider = CapabilityProvider::new();
+        assert_eq!(provider.summary(), "Not probed");
+    }
+
+    #[tokio::test]
+    async fn session_capabilities_after_probe() {
+        let mut provider = CapabilityProvider::new();
+        provider.probe().await;
+
+        let caps = provider.session_capabilities();
+        // Input should always be available (fallback to direct injection)
+        assert!(caps.input_available);
+    }
+
+    #[tokio::test]
+    async fn input_available_after_probe() {
+        let mut provider = CapabilityProvider::new();
+        provider.probe().await;
+
+        // Direct injection fallback should make this true
+        assert!(provider.input_available());
+    }
+
+    #[tokio::test]
+    async fn capture_tier_returns_valid() {
+        let mut provider = CapabilityProvider::new();
+        provider.probe().await;
+
+        // In test env, capture tier might be None or Some
+        let tier = provider.capture_tier();
+        if let Some(t) = tier {
+            assert!(t.has_capture());
+        }
+    }
+
+    #[tokio::test]
+    async fn log_report_does_not_panic() {
+        let mut provider = CapabilityProvider::new();
+        provider.probe().await;
+        provider.log_report(); // Should not panic
+    }
+
+    #[test]
+    fn log_report_unprobed_warns() {
+        let provider = CapabilityProvider::new();
+        provider.log_report(); // Should log warning but not panic
+    }
+
+    #[tokio::test]
+    async fn is_input_only_possible_works() {
+        let possible = is_input_only_possible().await;
+        // Should always be true due to fallback
+        assert!(possible);
+    }
+
+    #[test]
+    fn default_impl() {
+        let provider = CapabilityProvider::default();
+        assert!(!provider.is_probed());
+    }
+
+    #[tokio::test]
+    async fn multiple_probes_work() {
+        let mut provider = CapabilityProvider::new();
+        
+        provider.probe().await;
+        let mode1 = provider.best_mode();
+        
+        provider.probe().await;
+        let mode2 = provider.best_mode();
+        
+        // Modes should be consistent
+        assert_eq!(mode1, mode2);
+    }
 }
 

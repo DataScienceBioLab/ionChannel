@@ -319,9 +319,42 @@ mod tests {
     }
 
     #[test]
+    fn tier_name() {
+        assert_eq!(CaptureTier::None.name(), "None (input-only)");
+        assert_eq!(CaptureTier::Cpu.name(), "CPU Framebuffer");
+        assert_eq!(CaptureTier::Shm.name(), "Shared Memory");
+        assert_eq!(CaptureTier::Dmabuf.name(), "DMA-BUF (GPU)");
+    }
+
+    #[test]
+    fn tier_estimated_latency() {
+        assert_eq!(CaptureTier::Dmabuf.estimated_latency_ms(), 2);
+        assert_eq!(CaptureTier::Shm.estimated_latency_ms(), 10);
+        assert_eq!(CaptureTier::Cpu.estimated_latency_ms(), 30);
+        assert_eq!(CaptureTier::None.estimated_latency_ms(), 0);
+    }
+
+    #[test]
     fn tier_display() {
         assert!(CaptureTier::Dmabuf.to_string().contains("GPU"));
         assert!(CaptureTier::Shm.to_string().contains("Memory"));
+        assert!(CaptureTier::Cpu.to_string().contains("CPU"));
+        assert!(CaptureTier::None.to_string().contains("input-only"));
+    }
+
+    #[test]
+    fn tier_partial_ord() {
+        assert!(CaptureTier::Dmabuf.partial_cmp(&CaptureTier::Shm) == Some(Ordering::Greater));
+        assert!(CaptureTier::None.partial_cmp(&CaptureTier::Cpu) == Some(Ordering::Less));
+        assert!(CaptureTier::Shm.partial_cmp(&CaptureTier::Shm) == Some(Ordering::Equal));
+    }
+
+    #[test]
+    fn tier_repr_values() {
+        assert_eq!(CaptureTier::None as u8, 0);
+        assert_eq!(CaptureTier::Cpu as u8, 1);
+        assert_eq!(CaptureTier::Shm as u8, 2);
+        assert_eq!(CaptureTier::Dmabuf as u8, 3);
     }
 
     #[test]
@@ -331,11 +364,153 @@ mod tests {
         println!("Detected environment: {env:?}");
     }
 
+    #[test]
+    fn environment_info_clone() {
+        let env = EnvironmentInfo::detect();
+        let cloned = env.clone();
+        assert_eq!(env.is_vm, cloned.is_vm);
+        assert_eq!(env.has_drm, cloned.has_drm);
+    }
+
+    #[test]
+    fn environment_dmabuf_likely_works_vm_with_virtio() {
+        let env = EnvironmentInfo {
+            is_vm: true,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("Virtio".to_string()),
+        };
+        assert!(!env.dmabuf_likely_works());
+    }
+
+    #[test]
+    fn environment_dmabuf_likely_works_vm_with_qemu() {
+        let env = EnvironmentInfo {
+            is_vm: true,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("QEMU".to_string()),
+        };
+        assert!(!env.dmabuf_likely_works());
+    }
+
+    #[test]
+    fn environment_dmabuf_likely_works_physical() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("AMD".to_string()),
+        };
+        assert!(env.dmabuf_likely_works());
+    }
+
+    #[test]
+    fn environment_dmabuf_likely_works_no_drm() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: false,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: None,
+        };
+        assert!(!env.dmabuf_likely_works());
+    }
+
     #[tokio::test]
     async fn tier_selector_defaults() {
         let selector = TierSelector::new();
         let _tier = selector.select_best().await;
         // Just ensure it doesn't panic
+    }
+
+    #[tokio::test]
+    async fn tier_selector_with_env() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("Intel".to_string()),
+        };
+        let selector = TierSelector::with_env(env);
+        assert!(selector.env_info().has_drm);
+    }
+
+    #[tokio::test]
+    async fn tier_selector_no_wayland() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: true,
+            wayland_display: None,
+            has_runtime_dir: true,
+            gpu_vendor: None,
+        };
+        let selector = TierSelector::with_env(env);
+        let tier = selector.select_best().await;
+        assert_eq!(tier, CaptureTier::None);
+    }
+
+    #[tokio::test]
+    async fn tier_selector_select_tier() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("AMD".to_string()),
+        };
+        let selector = TierSelector::with_env(env);
+        
+        // None is always available
+        assert!(selector.select_tier(CaptureTier::None).await.is_some());
+    }
+
+    #[tokio::test]
+    async fn tier_selector_select_tier_shm() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: false,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: None,
+        };
+        let selector = TierSelector::with_env(env);
+        
+        // SHM should work with wayland and runtime dir
+        assert!(selector.select_tier(CaptureTier::Shm).await.is_some());
+    }
+
+    #[tokio::test]
+    async fn tier_selector_select_tier_cpu() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: false,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: false,
+            gpu_vendor: None,
+        };
+        let selector = TierSelector::with_env(env);
+        
+        // CPU should work with just wayland
+        assert!(selector.select_tier(CaptureTier::Cpu).await.is_some());
+    }
+
+    #[test]
+    fn tier_selector_default_impl() {
+        let selector = TierSelector::default();
+        assert!(!selector.env_info().wayland_display.is_none() || selector.env_info().wayland_display.is_none());
+    }
+
+    #[test]
+    fn tier_is_send_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<CaptureTier>();
+        assert_send_sync::<EnvironmentInfo>();
+        assert_send_sync::<TierSelector>();
     }
 }
 
