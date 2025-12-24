@@ -251,5 +251,136 @@ mod tests {
         assert!(caps.description.contains("VM"));
         assert_eq!(caps.tier, CaptureTier::Shm);
     }
+
+    #[test]
+    fn capabilities_dmabuf() {
+        let formats = vec![FrameFormat::Bgra8888, FrameFormat::Rgba8888];
+        let caps = CaptureCapabilities::dmabuf(formats.clone());
+        
+        assert_eq!(caps.tier, CaptureTier::Dmabuf);
+        assert_eq!(caps.formats, formats);
+        assert_eq!(caps.max_fps, 60);
+        assert!(caps.hardware_encoding);
+        assert_eq!(caps.estimated_cpu_overhead, 5);
+        assert!(caps.description.contains("GPU"));
+    }
+
+    #[test]
+    fn capabilities_shm() {
+        let formats = vec![FrameFormat::Bgra8888];
+        let caps = CaptureCapabilities::shm(formats.clone());
+        
+        assert_eq!(caps.tier, CaptureTier::Shm);
+        assert_eq!(caps.formats, formats);
+        assert_eq!(caps.max_fps, 60);
+        assert!(!caps.hardware_encoding);
+        assert_eq!(caps.estimated_cpu_overhead, 15);
+    }
+
+    #[test]
+    fn capabilities_cpu() {
+        let caps = CaptureCapabilities::cpu();
+        
+        assert_eq!(caps.tier, CaptureTier::Cpu);
+        assert!(!caps.formats.is_empty());
+        assert_eq!(caps.max_fps, 30);
+        assert!(!caps.hardware_encoding);
+        assert_eq!(caps.estimated_cpu_overhead, 30);
+        assert!(caps.description.contains("universal"));
+    }
+
+    #[test]
+    fn capabilities_none() {
+        let caps = CaptureCapabilities::none();
+        
+        assert_eq!(caps.tier, CaptureTier::None);
+        assert!(caps.formats.is_empty());
+        assert_eq!(caps.max_fps, 0);
+        assert!(!caps.hardware_encoding);
+        assert_eq!(caps.estimated_cpu_overhead, 0);
+        assert!(caps.description.contains("input-only"));
+    }
+
+    #[test]
+    fn capture_error_display() {
+        let errors = [
+            CaptureError::NotAvailable("test".into()),
+            CaptureError::WaylandConnection("failed".into()),
+            CaptureError::ProtocolNotSupported("dmabuf".into()),
+            CaptureError::BufferAllocation("oom".into()),
+            CaptureError::Timeout(std::time::Duration::from_secs(5)),
+            CaptureError::SessionClosed,
+            CaptureError::Internal("oops".into()),
+        ];
+
+        for err in &errors {
+            assert!(!err.to_string().is_empty());
+        }
+    }
+
+    #[test]
+    fn capture_error_not_available() {
+        let err = CaptureError::NotAvailable("dmabuf".into());
+        assert!(err.to_string().contains("dmabuf"));
+        assert!(err.to_string().contains("not available"));
+    }
+
+    #[test]
+    fn capture_error_wayland() {
+        let err = CaptureError::WaylandConnection("display not found".into());
+        assert!(err.to_string().contains("wayland"));
+    }
+
+    #[test]
+    fn capture_error_protocol() {
+        let err = CaptureError::ProtocolNotSupported("zwp_linux_dmabuf_v1".into());
+        assert!(err.to_string().contains("protocol"));
+    }
+
+    #[test]
+    fn capture_error_buffer() {
+        let err = CaptureError::BufferAllocation("out of memory".into());
+        assert!(err.to_string().contains("buffer"));
+    }
+
+    #[test]
+    fn capture_error_timeout() {
+        let err = CaptureError::Timeout(std::time::Duration::from_millis(100));
+        assert!(err.to_string().contains("100"));
+    }
+
+    #[test]
+    fn capture_error_session_closed() {
+        let err = CaptureError::SessionClosed;
+        assert!(err.to_string().contains("closed"));
+    }
+
+    #[test]
+    fn capture_error_internal() {
+        let err = CaptureError::Internal("unexpected state".into());
+        assert!(err.to_string().contains("unexpected"));
+    }
+
+    #[test]
+    fn capture_capabilities_clone() {
+        let caps = CaptureCapabilities::cpu();
+        let cloned = caps.clone();
+        assert_eq!(caps.tier, cloned.tier);
+        assert_eq!(caps.max_fps, cloned.max_fps);
+    }
+
+    #[test]
+    fn capture_capabilities_debug() {
+        let caps = CaptureCapabilities::cpu();
+        let debug = format!("{:?}", caps);
+        assert!(debug.contains("CaptureCapabilities"));
+    }
+
+    #[test]
+    fn capture_error_is_send_sync() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<CaptureError>();
+        assert_send_sync::<CaptureCapabilities>();
+    }
 }
 

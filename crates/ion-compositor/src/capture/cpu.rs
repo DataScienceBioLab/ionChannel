@@ -269,6 +269,7 @@ impl ScreenCapture for CpuCapture {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::capture::ScreenCaptureExt;
 
     #[tokio::test]
     async fn cpu_capture_basic() {
@@ -278,6 +279,32 @@ mod tests {
         assert_eq!(frame.width(), 800);
         assert_eq!(frame.height(), 600);
         assert_eq!(frame.format(), FrameFormat::Bgra8888);
+    }
+
+    #[tokio::test]
+    async fn cpu_capture_custom_config() {
+        let config = CpuCaptureConfig {
+            target_fps: 10,
+            format: FrameFormat::Rgba8888,
+            frame_differencing: false,
+        };
+        let capture = CpuCapture::new(640, 480, config);
+        let frame = capture.do_capture().await.unwrap();
+
+        assert_eq!(frame.width(), 640);
+        assert_eq!(frame.height(), 480);
+        assert_eq!(frame.format(), FrameFormat::Rgba8888);
+    }
+
+    #[tokio::test]
+    async fn cpu_capture_multiple_frames() {
+        let capture = CpuCapture::with_defaults(100, 100);
+        
+        let frame1 = capture.do_capture().await.unwrap();
+        let frame2 = capture.do_capture().await.unwrap();
+        
+        // Sequence should increment
+        assert_eq!(frame1.metadata.sequence + 1, frame2.metadata.sequence);
     }
 
     #[test]
@@ -292,6 +319,21 @@ mod tests {
     }
 
     #[test]
+    fn cpu_config_default() {
+        let config = CpuCaptureConfig::default();
+        assert_eq!(config.target_fps, 15);
+        assert_eq!(config.format, FrameFormat::Bgra8888);
+        assert!(config.frame_differencing);
+    }
+
+    #[test]
+    fn cpu_config_clone() {
+        let config = CpuCaptureConfig::default();
+        let cloned = config.clone();
+        assert_eq!(config.target_fps, cloned.target_fps);
+    }
+
+    #[test]
     fn cpu_frame_differencing_hash() {
         let data1 = vec![0u8; 4096];
         let data2 = vec![1u8; 4096];
@@ -303,9 +345,106 @@ mod tests {
     }
 
     #[test]
+    fn cpu_hash_same_data() {
+        let data = vec![42u8; 4096];
+        let hash1 = CpuCapture::hash_frame(&data);
+        let hash2 = CpuCapture::hash_frame(&data);
+        assert_eq!(hash1, hash2);
+    }
+
+    #[tokio::test]
+    async fn cpu_start_stream() {
+        let capture = CpuCapture::with_defaults(100, 100);
+        let result = capture.start_stream(10);
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn cpu_stop_stream() {
+        let capture = CpuCapture::with_defaults(100, 100);
+        let result = capture.stop_stream();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn cpu_is_capturing() {
+        let capture = CpuCapture::with_defaults(100, 100);
+        assert!(!capture.is_capturing());
+    }
+
+    #[test]
+    fn cpu_tier() {
+        let capture = CpuCapture::with_defaults(100, 100);
+        assert_eq!(capture.tier(), CaptureTier::Cpu);
+    }
+
+    #[test]
+    fn cpu_is_optimal() {
+        let capture = CpuCapture::with_defaults(100, 100);
+        assert!(!capture.is_optimal());
+    }
+
+    #[test]
+    fn cpu_is_available() {
+        let capture = CpuCapture::with_defaults(100, 100);
+        assert!(capture.is_available());
+    }
+
+    #[tokio::test]
+    async fn cpu_generate_fallback_frame_bgra() {
+        let config = CpuCaptureConfig {
+            format: FrameFormat::Bgra8888,
+            ..Default::default()
+        };
+        let capture = CpuCapture::new(64, 64, config);
+        let data = capture.generate_fallback_frame(64, 64, 0);
+        
+        // BGRA8888: 4 bytes per pixel
+        assert_eq!(data.len(), 64 * 64 * 4);
+    }
+
+    #[tokio::test]
+    async fn cpu_generate_fallback_frame_rgba() {
+        let config = CpuCaptureConfig {
+            format: FrameFormat::Rgba8888,
+            ..Default::default()
+        };
+        let capture = CpuCapture::new(64, 64, config);
+        let data = capture.generate_fallback_frame(64, 64, 0);
+        
+        assert_eq!(data.len(), 64 * 64 * 4);
+    }
+
+    #[tokio::test]
+    async fn cpu_generate_fallback_frame_rgb888() {
+        let config = CpuCaptureConfig {
+            format: FrameFormat::Rgb888,
+            ..Default::default()
+        };
+        let capture = CpuCapture::new(64, 64, config);
+        let data = capture.generate_fallback_frame(64, 64, 0);
+        
+        // RGB888: 3 bytes per pixel
+        assert_eq!(data.len(), 64 * 64 * 3);
+    }
+
+    #[tokio::test]
+    async fn cpu_generate_fallback_frame_bgr888() {
+        let config = CpuCaptureConfig {
+            format: FrameFormat::Bgr888,
+            ..Default::default()
+        };
+        let capture = CpuCapture::new(64, 64, config);
+        let data = capture.generate_fallback_frame(64, 64, 0);
+        
+        assert_eq!(data.len(), 64 * 64 * 3);
+    }
+
+    #[test]
     fn cpu_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<CpuCapture>();
+        assert_send_sync::<CpuCaptureConfig>();
     }
 }
 
