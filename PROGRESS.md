@@ -10,6 +10,17 @@
 
 Building comprehensive test coverage for reproducible validation.
 
+### ecoPrimals Integration
+
+**Songbird integration designed** — ionChannel can work with [songbird](../../ecoPrimals/songBird) for:
+
+- **Remote tower management**: Access Eastgate/Westgate remotely
+- **VM hosting**: Students remote into individual VMs
+- **Trust-based access**: 5-level progressive escalation
+- **Capability discovery**: Zero hardcoded IPs
+
+See: [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
+
 ### Testing Progress
 
 - [x] Core unit tests (321 passing)

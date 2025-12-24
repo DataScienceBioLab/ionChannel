@@ -137,11 +137,21 @@ ion-compositor/src/capabilities.rs  # CapabilityProvider
 
 ## Future Phases
 
-### Phase 9: Pre-Login RDP
+### Phase 9: ecoPrimals Integration
+
+**Songbird integration designed** - see [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
+
+- [ ] Add `Protocol::RemoteDesktop` to songbird
+- [ ] ionChannel capability registration with discovery
+- [ ] Trust level → capability mapping
+- [ ] VM hosting with per-VM ionChannel instances
+- [ ] High-performance tarpc adapter
+
+### Phase 10: Pre-Login RDP
 
 Enable RDP at cosmic-greeter login screen.
 
-### Phase 10: Enhanced Features
+### Phase 11: Enhanced Features
 
 - Clipboard synchronization
 - File transfer

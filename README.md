@@ -104,6 +104,7 @@ cargo run --bin capability-check
 | [ROADMAP.md](ROADMAP.md) | Development phases |
 | [CHANGELOG.md](CHANGELOG.md) | All changes |
 | [docs/upstream-prs/](docs/upstream-prs/) | PR templates for System76 |
+| [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md) | ecoPrimals ecosystem bridge |
 
 ## Development
 
