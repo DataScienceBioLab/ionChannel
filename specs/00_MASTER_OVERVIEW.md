@@ -89,6 +89,7 @@ THEN:   RustDesk and similar tools cannot inject mouse/keyboard on COSMIC
 | 03 | RustDesk Integration | `rustdesk/rustdesk` | `03_RUSTDESK_INTEGRATION.md` | P1 |
 | 04 | Pre-Login RDP | `pop-os/cosmic-greeter` | `04_PRELOGIN_RDP.md` | P2 |
 | 05 | Ecosystem Integration | `ecoPrimals/songBird` | `05_ECOSYSTEM_INTEGRATION.md` | P1 |
+| 06 | Platform Agnosticism | (future backends) | `06_PLATFORM_AGNOSTICISM.md` | P2 |
 
 ## Success Criteria
 
@@ -189,7 +190,8 @@ ionChannel/
 │   ├── 02_COMPOSITOR_INPUT.md       # Compositor input injection spec
 │   ├── 03_RUSTDESK_INTEGRATION.md   # RustDesk compatibility spec
 │   ├── 04_PRELOGIN_RDP.md           # Pre-login remote access spec
-│   └── 05_ECOSYSTEM_INTEGRATION.md  # Songbird/ecoPrimals integration
+│   ├── 05_ECOSYSTEM_INTEGRATION.md  # Songbird/ecoPrimals integration
+│   └── 06_PLATFORM_AGNOSTICISM.md   # Cross-platform evolution roadmap
 │
 ├── docs/
 │   ├── SONGBIRD_INTEGRATION.md      # Detailed integration guide
