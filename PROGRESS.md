@@ -6,9 +6,9 @@
 
 ---
 
-## Current Phase: Test Coverage Expansion
+## Current Phase: Multi-Environment Validation
 
-Building comprehensive test coverage for reproducible validation.
+Core testing complete. Preparing for multi-system validation and upstream submission.
 
 ### ecoPrimals Integration
 
@@ -31,6 +31,19 @@ See: [docs/SONGBIRD_INTEGRATION.md](docs/SONGBIRD_INTEGRATION.md)
 - [x] E2E demonstration tests (7 scenarios)
 - [x] Chaos/fuzz testing (15 scenarios)
 - [x] Security audit (12 tests)
+- [x] Async correctness (proper sync, no sleep-based waiting)
+
+### Async Correctness
+
+Tests use proper synchronization, not sleeps:
+
+| Pattern | Implementation |
+|---------|----------------|
+| Event waiting | `wait_for_events()` via watch channel |
+| Receive guards | `recv_n_events()` with 5s timeout |
+| Rate limiting | Acceptable sleep for time-dependent tests |
+
+**Principle:** Test issues = production issues
 
 ### Coverage Breakdown
 
@@ -156,4 +169,4 @@ Input Available: Yes
 
 ---
 
-*Updated: 2024-12-24*
+*Updated: 2024-12-24 (async correctness complete)*

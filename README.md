@@ -92,9 +92,11 @@ cargo run --bin capability-check
 | Input-only mode | ✅ Complete |
 | Capability detection | ✅ Complete |
 | **391 tests** (357 unit + 34 integration) | ✅ 80% coverage |
-| D-Bus integration tests | ✅ Complete |
+| E2E demonstrations | ✅ 7 scenarios |
+| Chaos/fuzz testing | ✅ 15 scenarios |
+| Security audit | ✅ 12 tests |
+| Async correctness | ✅ No sleep-based sync |
 | Upstream PR templates | ✅ Ready |
-| **E2E validation** | 🔲 In progress |
 
 ## Documentation
 
