@@ -505,6 +505,107 @@ mod tests {
         assert!(!selector.env_info().wayland_display.is_none() || selector.env_info().wayland_display.is_none());
     }
 
+    #[tokio::test]
+    async fn tier_selector_select_best_dmabuf() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("Intel".to_string()),
+        };
+        let selector = TierSelector::with_env(env);
+        let tier = selector.select_best().await;
+        // Should select dmabuf as it's the best
+        assert_eq!(tier, CaptureTier::Dmabuf);
+    }
+
+    #[tokio::test]
+    async fn tier_selector_select_best_shm_fallback() {
+        let env = EnvironmentInfo {
+            is_vm: true,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("Virtio".to_string()), // Virtio = dmabuf won't work
+        };
+        let selector = TierSelector::with_env(env);
+        let tier = selector.select_best().await;
+        // Should fall back to shm
+        assert_eq!(tier, CaptureTier::Shm);
+    }
+
+    #[tokio::test]
+    async fn tier_selector_select_best_cpu_fallback() {
+        let env = EnvironmentInfo {
+            is_vm: true,
+            has_drm: false,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: false, // No runtime dir = shm won't work
+            gpu_vendor: Some("Virtio".to_string()),
+        };
+        let selector = TierSelector::with_env(env);
+        let tier = selector.select_best().await;
+        // Should fall back to CPU
+        assert_eq!(tier, CaptureTier::Cpu);
+    }
+
+    #[tokio::test]
+    async fn tier_selector_select_tier_dmabuf() {
+        let env = EnvironmentInfo {
+            is_vm: false,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("NVIDIA".to_string()),
+        };
+        let selector = TierSelector::with_env(env);
+        
+        // Dmabuf should be available
+        assert!(selector.select_tier(CaptureTier::Dmabuf).await.is_some());
+    }
+
+    #[tokio::test]
+    async fn tier_selector_select_tier_dmabuf_unavailable() {
+        let env = EnvironmentInfo {
+            is_vm: true,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("QEMU".to_string()), // QEMU = dmabuf won't work
+        };
+        let selector = TierSelector::with_env(env);
+        
+        // Dmabuf should NOT be available
+        assert!(selector.select_tier(CaptureTier::Dmabuf).await.is_none());
+    }
+
+    #[test]
+    fn environment_dmabuf_vm_no_vendor() {
+        let env = EnvironmentInfo {
+            is_vm: true,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: None, // No vendor info
+        };
+        // Should still work if no vendor detected
+        assert!(env.dmabuf_likely_works());
+    }
+
+    #[test]
+    fn environment_dmabuf_vm_nvidia() {
+        let env = EnvironmentInfo {
+            is_vm: true,
+            has_drm: true,
+            wayland_display: Some("wayland-0".to_string()),
+            has_runtime_dir: true,
+            gpu_vendor: Some("NVIDIA".to_string()), // GPU passthrough
+        };
+        // NVIDIA in VM (GPU passthrough) should work
+        assert!(env.dmabuf_likely_works());
+    }
+
     #[test]
     fn tier_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}

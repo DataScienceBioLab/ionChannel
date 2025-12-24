@@ -621,5 +621,61 @@ mod tests {
         assert_send_sync::<ShmCaptureConfig>();
         assert_send_sync::<ShmCaptureBuilder>();
     }
+
+    #[tokio::test]
+    async fn shm_generate_test_pattern_other_format() {
+        // Test fallback case for other formats (uses BGRA order)
+        // Use Xrgb8888 which is 4 bytes but not RGBA or BGRA
+        let capture = ShmCapture::with_defaults(64, 64);
+        let data = capture.generate_test_pattern(64, 64, FrameFormat::Xrgb8888, 0);
+        assert_eq!(data.len(), 64 * 64 * 4);
+        // First pixel should be in BGRA order (the fallback)
+        // Can't easily verify without knowing the pattern, just check size
+    }
+
+    #[test]
+    fn shm_builder_try_build_no_height() {
+        let mut builder = ShmCaptureBuilder::new();
+        builder.width = Some(100);
+        // height not set
+        let result = builder.try_build();
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn shm_frame_format_preserved() {
+        let config = ShmCaptureConfig {
+            preferred_format: FrameFormat::Rgba8888,
+            ..Default::default()
+        };
+        let capture = ShmCapture::new(100, 100, config);
+        let frame = capture.do_capture().await.unwrap();
+        assert_eq!(frame.format(), FrameFormat::Rgba8888);
+    }
+
+    #[tokio::test]
+    async fn shm_multiple_resizes() {
+        let capture = ShmCapture::with_defaults(100, 100);
+        
+        capture.resize(200, 200).await;
+        let frame = capture.do_capture().await.unwrap();
+        assert_eq!(frame.width(), 200);
+        
+        capture.resize(50, 50).await;
+        let frame = capture.do_capture().await.unwrap();
+        assert_eq!(frame.width(), 50);
+    }
+
+    #[test]
+    fn shm_config_custom() {
+        let config = ShmCaptureConfig {
+            target_fps: 60,
+            buffer_count: 4,
+            preferred_format: FrameFormat::Rgba8888,
+            timeout: Duration::from_millis(50),
+        };
+        assert_eq!(config.target_fps, 60);
+        assert_eq!(config.buffer_count, 4);
+    }
 }
 
