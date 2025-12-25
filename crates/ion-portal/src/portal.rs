@@ -206,10 +206,7 @@ impl RemoteDesktopPortal {
 
                 // ionChannel extension: session mode info
                 let mode = self.session_mode;
-                result.insert(
-                    "session_mode".to_string(),
-                    OwnedValue::from(mode as u32),
-                );
+                result.insert("session_mode".to_string(), OwnedValue::from(mode as u32));
                 result.insert(
                     "capture_available".to_string(),
                     OwnedValue::from(mode.has_capture()),

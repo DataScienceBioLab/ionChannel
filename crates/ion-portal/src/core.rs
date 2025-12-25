@@ -9,7 +9,6 @@
 //! - Swapping transport layers (D-Bus → pure Rust)
 //! - Clearer separation of concerns
 
-
 use tracing::{debug, info, instrument};
 
 use ion_core::device::DeviceType;
