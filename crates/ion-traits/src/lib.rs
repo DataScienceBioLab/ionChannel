@@ -33,9 +33,7 @@
 //! }
 //! ```
 
-#![warn(missing_docs)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
+// Lints are configured in workspace Cargo.toml
 
 pub mod capture;
 pub mod error;
