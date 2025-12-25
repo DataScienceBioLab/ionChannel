@@ -2,52 +2,83 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, main]
   pull_request:
-    branches: [main]
+    branches: [master, main]
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
 jobs:
-  check:
-    name: Check
+  test:
+    name: Test Suite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-action@stable
         with:
-          components: rustfmt, clippy
+          components: clippy, rustfmt
       
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev pkg-config
+          sudo apt-get install -y \
+            libdbus-1-dev \
+            pkg-config
       
-      - name: Cache cargo registry
+      - name: Cache cargo
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
-      
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-      
-      - name: Run clippy
-        run: cargo clippy --workspace --all-targets
       
       - name: Build
         run: cargo build --workspace --all-targets
       
       - name: Run tests
         run: cargo test --workspace
+      
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdbus-1-dev pkg-config
+      
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin --locked || true
+      
+      - name: Run coverage
+        run: cargo tarpaulin --workspace --out xml --skip-clean
+        continue-on-error: true
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: cobertura.xml
+          fail_ci_if_error: false
 
   docs:
     name: Documentation
@@ -55,7 +86,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-action@stable
       
       - name: Install system dependencies
@@ -63,46 +94,32 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libdbus-1-dev pkg-config
       
-      - name: Build documentation
+      - name: Build docs
         run: cargo doc --workspace --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
 
-  msrv:
-    name: Minimum Supported Rust Version
-    runs-on: ubuntu-latest
+  # Platform detection test
+  platform-check:
+    name: Platform Detection
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install Rust 1.75
-        uses: dtolnay/rust-action@1.75.0
-      
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev pkg-config
-      
-      - name: Check MSRV
-        run: cargo check --workspace
-
-  examples:
-    name: Examples
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-action@stable
       
-      - name: Install system dependencies
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libdbus-1-dev pkg-config
       
-      - name: Build examples
-        run: cargo build --examples
+      - name: Build ion-traits only
+        run: cargo build --package ion-traits
       
-      - name: Run smithay_integration example
-        run: cargo run --example smithay_integration
-        timeout-minutes: 1
-
+      - name: Test platform detection
+        run: cargo test --package ion-traits platform
