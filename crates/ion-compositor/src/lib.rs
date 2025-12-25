@@ -70,6 +70,7 @@
 
 pub mod capabilities;
 pub mod capture;
+pub mod compat;
 pub mod dbus_service;
 pub mod eis_backend;
 pub mod rate_limiter;
@@ -82,6 +83,7 @@ pub use capture::{
     CpuCapture, DmabufCapture, FrameFormat, ScreenCapture, ScreenCaptureExt,
     ShmCapture, TierSelector,
 };
+pub use compat::{adapt, CaptureAdapter};
 pub use dbus_service::RemoteDesktopService;
 pub use eis_backend::{connect_to_eis, is_eis_available, EisCapabilities, EisError};
 pub use rate_limiter::RateLimiter;

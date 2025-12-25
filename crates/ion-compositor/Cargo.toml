@@ -14,6 +14,10 @@ path = "src/bin/capability-check.rs"
 [dependencies]
 # Internal
 ion-core.workspace = true
+ion-traits.workspace = true
+
+# Async trait support
+async-trait = "0.1"
 
 # D-Bus
 zbus.workspace = true

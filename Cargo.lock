@@ -779,8 +779,10 @@ dependencies = [
 name = "ion-compositor"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "futures",
  "ion-core",
+ "ion-traits",
  "thiserror",
  "tokio",
  "tracing",
