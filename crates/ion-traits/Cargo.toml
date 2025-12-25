@@ -1,0 +1,20 @@
+[package]
+name = "ion-traits"
+version.workspace = true
+edition.workspace = true
+license = "AGPL-3.0-or-later"
+description = "Platform-agnostic traits for ionChannel remote desktop"
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Async
+async-trait = "0.1"
+tokio = { workspace = true, features = ["sync"] }
+
+# Error handling
+thiserror.workspace = true
+
+[lints]
+workspace = true
+

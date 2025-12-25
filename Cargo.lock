@@ -839,6 +839,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ion-traits"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "ionChannel-examples"
 version = "0.1.0"
 dependencies = [

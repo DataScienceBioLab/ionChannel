@@ -2,6 +2,9 @@
 resolver = "2"
 
 members = [
+    # Platform-agnostic traits (abstraction layer)
+    "crates/ion-traits",
+    
     # Core library (shared types, traits, abstractions)
     "crates/ion-core",
     
@@ -32,6 +35,7 @@ categories = ["os::linux-apis", "network-programming"]
 
 [workspace.dependencies]
 # === Internal crates ===
+ion-traits = { path = "crates/ion-traits" }
 ion-core = { path = "crates/ion-core" }
 ion-portal = { path = "crates/ion-portal" }
 ion-compositor = { path = "crates/ion-compositor" }
