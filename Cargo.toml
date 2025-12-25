@@ -86,6 +86,8 @@ missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 doc_markdown = "allow"
 float_cmp = "allow"  # Tests use exact float comparisons
+struct_excessive_bools = "allow"  # Capability structs use bool flags
+fn_params_excessive_bools = "allow"
 significant_drop_tightening = "allow"
 
 [profile.dev]
