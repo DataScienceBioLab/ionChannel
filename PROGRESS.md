@@ -91,8 +91,20 @@ Note: ion-portal has low coverage due to D-Bus interface methods that require a 
 | ion-portal D-Bus interface | ✅ |
 | ion-compositor input injection | ✅ |
 | ion-test-substrate harness | ✅ |
+| ion-traits abstraction layer | ✅ 25 tests |
 | portal-test-client CLI | ✅ |
 | Documentation | ✅ |
+
+### Platform Abstraction (Spec 06) ✅
+
+| Trait | Purpose | Status |
+|-------|---------|--------|
+| `ScreenCapture` | Frame capture interface | ✅ |
+| `InputInjector` | Keyboard/mouse/touch | ✅ |
+| `RemoteDesktopService` | Session management | ✅ |
+| `Platform` | Runtime detection | ✅ |
+
+Foundation for cross-platform support (Linux → Windows → macOS).
 
 ---
 
@@ -100,14 +112,14 @@ Note: ion-portal has low coverage due to D-Bus interface methods that require a 
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | ~10,000 |
-| Unit tests | 357 |
+| Lines of Rust | ~11,000 |
+| Unit tests | 383 |
 | E2E tests | 7 |
 | Chaos tests | 15 |
 | Security tests | 12 |
 | D-Bus tests | 5 |
-| Coverage | 80.22% |
-| Crates | 5 |
+| Coverage | ~80% |
+| Crates | 6 |
 | Capture tiers | 3 |
 | Session modes | 4 |
 
@@ -134,9 +146,10 @@ Unit tests:
   ion-compositor:    181 passed
   ion-core:           95 passed
   ion-portal:         58 passed
-  ion-test-substrate: 23 passed
+  ion-test-substrate: 24 passed
+  ion-traits:         25 passed
   ─────────────────────────────────
-  Subtotal: 357 unit tests
+  Subtotal: 383 unit tests
 
 Integration tests:
   e2e_demonstration:   7 passed
@@ -145,7 +158,7 @@ Integration tests:
   ─────────────────────────────────
   Subtotal: 34 integration tests
 
-Total: 391 tests (80.22% coverage)
+Total: 417 tests
 ```
 
 ### Capability Check (Host)

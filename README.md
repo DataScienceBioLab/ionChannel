@@ -55,6 +55,7 @@ Philosophy: Never crash, degrade gracefully.
 
 ```
 ionChannel/crates/
+├── ion-traits/         # Platform-agnostic abstractions (ScreenCapture, InputInjector)
 ├── ion-core/           # Types, sessions, modes (RemoteDesktopMode, SessionCapabilities)
 ├── ion-portal/         # D-Bus RemoteDesktop interface
 ├── ion-compositor/     # Tiered capture + input injection
@@ -69,7 +70,7 @@ git clone https://github.com/DataScienceBioLab/ionChannel.git
 cd ionChannel
 
 cargo build --release
-cargo test --workspace   # 391 tests (80% coverage)
+cargo test --workspace   # 417 tests (80% coverage)
 ```
 
 ### Check Capabilities
@@ -87,11 +88,12 @@ cargo run --bin capability-check
 
 | Component | Status |
 |-----------|--------|
-| Core crates | ✅ Complete |
+| Core crates (6 total) | ✅ Complete |
+| Platform abstraction traits | ✅ Complete |
 | Tiered capture (dmabuf/shm/cpu) | ✅ Complete |
 | Input-only mode | ✅ Complete |
 | Capability detection | ✅ Complete |
-| **391 tests** (357 unit + 34 integration) | ✅ 80% coverage |
+| **417 tests** (383 unit + 34 integration) | ✅ 80% coverage |
 | E2E demonstrations | ✅ 7 scenarios |
 | Chaos/fuzz testing | ✅ 15 scenarios |
 | Security audit | ✅ 12 tests |
