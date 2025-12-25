@@ -2,6 +2,7 @@
 
 > *Gated signal transmission through network membranes*
 
+[![CI](https://github.com/DataScienceBioLab/ionChannel/actions/workflows/ci.yml/badge.svg)](https://github.com/DataScienceBioLab/ionChannel/actions/workflows/ci.yml)
 [![Rust](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE.md)
 
@@ -94,10 +95,7 @@ cargo run --bin capability-check
 | Input-only mode | ✅ Complete |
 | Capability detection | ✅ Complete |
 | **423 tests** (389 unit + 34 integration) | ✅ 80% coverage |
-| E2E demonstrations | ✅ 7 scenarios |
-| Chaos/fuzz testing | ✅ 15 scenarios |
-| Security audit | ✅ 12 tests |
-| Async correctness | ✅ No sleep-based sync |
+| GitHub Actions CI | ✅ Configured |
 | Upstream PR templates | ✅ Ready |
 
 ## Documentation
