@@ -112,16 +112,15 @@ Foundation for cross-platform support (Linux → Windows → macOS).
 
 | Metric | Value |
 |--------|-------|
-| Lines of Rust | ~11,000 |
-| Unit tests | 383 |
-| E2E tests | 7 |
-| Chaos tests | 15 |
-| Security tests | 12 |
-| D-Bus tests | 5 |
+| Lines of Rust | ~12,000 |
+| Unit tests | 389 |
+| Integration tests | 34 |
+| Total tests | 423 |
 | Coverage | ~80% |
 | Crates | 6 |
 | Capture tiers | 3 |
 | Session modes | 4 |
+| Platform traits | 3 |
 
 ---
 
@@ -143,13 +142,13 @@ Foundation for cross-platform support (Linux → Windows → macOS).
 $ cargo test --workspace
 
 Unit tests:
-  ion-compositor:    181 passed
+  ion-compositor:    187 passed  (+6 compat)
   ion-core:           95 passed
   ion-portal:         58 passed
   ion-test-substrate: 24 passed
   ion-traits:         25 passed
   ─────────────────────────────────
-  Subtotal: 383 unit tests
+  Subtotal: 389 unit tests
 
 Integration tests:
   e2e_demonstration:   7 passed
@@ -158,7 +157,7 @@ Integration tests:
   ─────────────────────────────────
   Subtotal: 34 integration tests
 
-Total: 417 tests
+Total: 423 tests
 ```
 
 ### Capability Check (Host)

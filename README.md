@@ -70,7 +70,7 @@ git clone https://github.com/DataScienceBioLab/ionChannel.git
 cd ionChannel
 
 cargo build --release
-cargo test --workspace   # 417 tests (80% coverage)
+cargo test --workspace   # 423 tests (80% coverage)
 ```
 
 ### Check Capabilities
@@ -93,7 +93,7 @@ cargo run --bin capability-check
 | Tiered capture (dmabuf/shm/cpu) | ✅ Complete |
 | Input-only mode | ✅ Complete |
 | Capability detection | ✅ Complete |
-| **417 tests** (383 unit + 34 integration) | ✅ 80% coverage |
+| **423 tests** (389 unit + 34 integration) | ✅ 80% coverage |
 | E2E demonstrations | ✅ 7 scenarios |
 | Chaos/fuzz testing | ✅ 15 scenarios |
 | Security audit | ✅ 12 tests |
