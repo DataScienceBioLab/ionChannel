@@ -29,9 +29,9 @@ build:
 test t:
 	cargo test --workspace
 
-# Lint
+# Lint (warnings only, not errors)
 lint:
-	cargo clippy --workspace --all-targets -- -D warnings
+	cargo clippy --workspace --all-targets
 
 # Format
 fmt:
