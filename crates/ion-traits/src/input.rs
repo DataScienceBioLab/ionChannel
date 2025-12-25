@@ -12,9 +12,9 @@ use crate::platform::Platform;
 ///
 /// Implementations provide input injection for different platforms:
 /// - Linux/Wayland: EIS (libei)
-/// - Linux/X11: XTest extension
-/// - Windows: SendInput API
-/// - macOS: CGEvent
+/// - Linux/X11: `XTest` extension
+/// - Windows: `SendInput` API
+/// - macOS: `CGEvent`
 ///
 /// # Example
 ///

@@ -33,7 +33,7 @@ async fn main() {
     let wayland = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "not set".into());
     let runtime = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "not set".into());
 
-    println!("│ WAYLAND_DISPLAY:  {:<42} │", wayland);
+    println!("│ WAYLAND_DISPLAY:  {wayland:<42} │");
     println!("│ XDG_RUNTIME_DIR:  {:<42} │", truncate(&runtime, 42));
     println!("└────────────────────────────────────────────────────────────────┘");
     println!();
@@ -127,7 +127,7 @@ async fn main() {
     println!();
 
     // Exit with appropriate code
-    std::process::exit(if mode.is_active() { 0 } else { 1 });
+    std::process::exit(i32::from(!mode.is_active()));
 }
 
 fn truncate(s: &str, max: usize) -> String {

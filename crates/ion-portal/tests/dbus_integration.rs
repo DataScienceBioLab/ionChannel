@@ -186,7 +186,7 @@ async fn test_dbus_properties() {
     let env = match DbusTestEnv::new().await {
         Ok(e) => e,
         Err(e) => {
-            eprintln!("Skipping: Failed to create D-Bus env: {}", e);
+            eprintln!("Skipping: Failed to create D-Bus env: {e}");
             return;
         },
     };
@@ -205,7 +205,7 @@ async fn test_dbus_properties() {
     let proxy = match proxy {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Skipping: Failed to create proxy: {}", e);
+            eprintln!("Skipping: Failed to create proxy: {e}");
             return;
         },
     };
@@ -228,7 +228,7 @@ async fn test_dbus_create_session() {
     let env = match DbusTestEnv::new().await {
         Ok(e) => e,
         Err(e) => {
-            eprintln!("Skipping: Failed to create D-Bus env: {}", e);
+            eprintln!("Skipping: Failed to create D-Bus env: {e}");
             return;
         },
     };
@@ -246,7 +246,7 @@ async fn test_dbus_create_session() {
     {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Skipping: Failed to create proxy: {}", e);
+            eprintln!("Skipping: Failed to create proxy: {e}");
             return;
         },
     };
@@ -273,7 +273,7 @@ async fn test_dbus_full_session_lifecycle() {
     let mut env = match DbusTestEnv::new().await {
         Ok(e) => e,
         Err(e) => {
-            eprintln!("Skipping: Failed to create D-Bus env: {}", e);
+            eprintln!("Skipping: Failed to create D-Bus env: {e}");
             return;
         },
     };
@@ -291,7 +291,7 @@ async fn test_dbus_full_session_lifecycle() {
     {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Skipping: Failed to create proxy: {}", e);
+            eprintln!("Skipping: Failed to create proxy: {e}");
             return;
         },
     };
@@ -315,7 +315,7 @@ async fn test_dbus_full_session_lifecycle() {
     let mut options = HashMap::new();
     options.insert(
         "types".to_string(),
-        OwnedValue::try_from(DeviceType::desktop_standard().bits()).unwrap(),
+        OwnedValue::from(DeviceType::desktop_standard().bits()),
     );
 
     let (code, _) = proxy
@@ -390,7 +390,7 @@ async fn test_dbus_session_not_found() {
     let env = match DbusTestEnv::new().await {
         Ok(e) => e,
         Err(e) => {
-            eprintln!("Skipping: Failed to create D-Bus env: {}", e);
+            eprintln!("Skipping: Failed to create D-Bus env: {e}");
             return;
         },
     };
@@ -408,7 +408,7 @@ async fn test_dbus_session_not_found() {
     {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Skipping: Failed to create proxy: {}", e);
+            eprintln!("Skipping: Failed to create proxy: {e}");
             return;
         },
     };
@@ -433,7 +433,7 @@ async fn test_dbus_mode_reporting() {
     let conn = match Connection::session().await {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Skipping: No D-Bus session: {}", e);
+            eprintln!("Skipping: No D-Bus session: {e}");
             return;
         },
     };

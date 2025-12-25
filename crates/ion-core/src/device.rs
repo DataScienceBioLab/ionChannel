@@ -3,7 +3,7 @@
 
 //! Device type definitions for remote desktop sessions.
 //!
-//! Matches the xdg-desktop-portal RemoteDesktop specification.
+//! Matches the xdg-desktop-portal `RemoteDesktop` specification.
 
 use bitflags::bitflags;
 
@@ -223,14 +223,14 @@ mod tests {
     #[test]
     fn device_type_clone_eq() {
         let a = DeviceType::desktop_standard();
-        let b = a.clone();
+        let b = a;
         assert_eq!(a, b);
     }
 
     #[test]
     fn device_type_debug() {
         let devices = DeviceType::desktop_standard();
-        let debug = format!("{:?}", devices);
+        let debug = format!("{devices:?}");
         assert!(debug.contains("KEYBOARD") || debug.contains("DeviceType"));
     }
 

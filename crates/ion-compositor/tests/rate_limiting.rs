@@ -24,8 +24,7 @@ async fn events_within_burst_allowed() {
     for i in 0..10 {
         assert!(
             limiter.check(&session).await.is_ok(),
-            "event {} should be allowed",
-            i
+            "event {i} should be allowed"
         );
     }
 }
@@ -172,7 +171,7 @@ async fn high_throughput_stability() {
     }
 
     // Should have allowed up to burst limit (1000)
-    assert!(allowed <= 1000, "allowed {} exceeds burst limit", allowed);
+    assert!(allowed <= 1000, "allowed {allowed} exceeds burst limit");
     assert!(rejected >= 1000, "should have rejected many events");
 }
 
@@ -192,7 +191,7 @@ async fn concurrent_access_safe() {
     let mut handles = vec![];
     for i in 0..10 {
         let l = Arc::clone(&limiter);
-        let session_id = format!("/test/rate/concurrent/{}", i);
+        let session_id = format!("/test/rate/concurrent/{i}");
         handles.push(tokio::spawn(async move {
             let session = SessionId::new(&session_id);
             let mut count = 0;

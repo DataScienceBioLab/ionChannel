@@ -9,9 +9,8 @@
 //! - Swapping transport layers (D-Bus → pure Rust)
 //! - Clearer separation of concerns
 
-use std::collections::HashMap;
 
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, info, instrument};
 
 use ion_core::device::DeviceType;
 use ion_core::event::{ButtonState, InputEvent, KeyState};
@@ -149,7 +148,7 @@ impl PortalCore {
             .session_manager
             .get_session(&session_id)
             .await
-            .ok_or_else(|| Error::Internal(format!("Session not found: {}", session_id)))?;
+            .ok_or_else(|| Error::Internal(format!("Session not found: {session_id}")))?;
 
         let requested_types = request
             .device_types
@@ -178,7 +177,7 @@ impl PortalCore {
             .session_manager
             .get_session(&session_id)
             .await
-            .ok_or_else(|| Error::Internal(format!("Session not found: {}", session_id)))?;
+            .ok_or_else(|| Error::Internal(format!("Session not found: {session_id}")))?;
 
         session.start().await?;
 
@@ -217,7 +216,7 @@ impl PortalCore {
         self.session_manager
             .get_session(&id)
             .await
-            .ok_or_else(|| Error::Internal(format!("Session not found: {}", session_id)))
+            .ok_or_else(|| Error::Internal(format!("Session not found: {session_id}")))
     }
 
     /// Notifies the compositor of relative pointer motion.
@@ -768,8 +767,8 @@ mod tests {
         ];
 
         for (mode, expected_capture, expected_input) in modes {
-            assert_eq!(mode.has_capture(), expected_capture, "mode={:?}", mode);
-            assert_eq!(mode.has_input(), expected_input, "mode={:?}", mode);
+            assert_eq!(mode.has_capture(), expected_capture, "mode={mode:?}");
+            assert_eq!(mode.has_input(), expected_input, "mode={mode:?}");
         }
     }
 }

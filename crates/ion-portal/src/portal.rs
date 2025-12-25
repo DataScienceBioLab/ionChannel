@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright © 2024-2025 DataScienceBioLab
 
-//! RemoteDesktop portal D-Bus interface implementation.
+//! `RemoteDesktop` portal D-Bus interface implementation.
 //!
 //! Implements `org.freedesktop.impl.portal.RemoteDesktop` interface
 //! per the xdg-desktop-portal specification.
@@ -33,14 +33,14 @@ pub enum ResponseCode {
 /// Result type for portal methods.
 pub type PortalResult<T> = (u32, T);
 
-/// RemoteDesktop portal interface.
+/// `RemoteDesktop` portal interface.
 ///
 /// This struct implements the D-Bus interface for remote desktop functionality.
 /// It manages sessions and forwards input events to the compositor.
 #[derive(Debug, Clone)]
 pub struct RemoteDesktopPortal {
     session_manager: SessionManager,
-    /// The session mode (Full, InputOnly, ViewOnly, None)
+    /// The session mode (Full, `InputOnly`, `ViewOnly`, None)
     session_mode: RemoteDesktopMode,
 }
 
@@ -201,22 +201,22 @@ impl RemoteDesktopPortal {
                 // Standard portal response: authorized devices
                 result.insert(
                     "devices".to_string(),
-                    OwnedValue::try_from(session.authorized_devices().await.bits()).unwrap(),
+                    OwnedValue::from(session.authorized_devices().await.bits()),
                 );
 
                 // ionChannel extension: session mode info
                 let mode = self.session_mode;
                 result.insert(
                     "session_mode".to_string(),
-                    OwnedValue::try_from(mode as u32).unwrap(),
+                    OwnedValue::from(mode as u32),
                 );
                 result.insert(
                     "capture_available".to_string(),
-                    OwnedValue::try_from(mode.has_capture()).unwrap(),
+                    OwnedValue::from(mode.has_capture()),
                 );
                 result.insert(
                     "input_available".to_string(),
-                    OwnedValue::try_from(mode.has_input()).unwrap(),
+                    OwnedValue::from(mode.has_input()),
                 );
 
                 info!(
@@ -504,9 +504,9 @@ mod tests {
 
         // Create multiple sessions
         for i in 0..5 {
-            let session_id = SessionId::new(&format!("/test/session/{}", i));
+            let session_id = SessionId::new(format!("/test/session/{i}"));
             manager
-                .create_session(session_id, format!("app-{}", i))
+                .create_session(session_id, format!("app-{i}"))
                 .await
                 .unwrap();
         }

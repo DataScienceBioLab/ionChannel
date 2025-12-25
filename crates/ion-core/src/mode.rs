@@ -355,11 +355,11 @@ mod tests {
     #[test]
     fn mode_clone_eq() {
         let mode = RemoteDesktopMode::Full;
-        let cloned = mode.clone();
+        let cloned = mode;
         assert_eq!(mode, cloned);
 
         let caps = SessionCapabilities::full();
-        let caps_cloned = caps.clone();
+        let caps_cloned = caps;
         assert_eq!(caps, caps_cloned);
     }
 }

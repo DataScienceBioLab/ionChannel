@@ -92,7 +92,7 @@ impl std::fmt::Display for SessionState {
     }
 }
 
-/// Internal session data protected by RwLock.
+/// Internal session data protected by `RwLock`.
 #[derive(Debug)]
 struct SessionInner {
     state: SessionState,

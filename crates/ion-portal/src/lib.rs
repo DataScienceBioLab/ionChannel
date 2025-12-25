@@ -6,7 +6,7 @@
 
 //! # ion-portal
 //!
-//! RemoteDesktop portal implementation for COSMIC desktop.
+//! `RemoteDesktop` portal implementation for COSMIC desktop.
 //!
 //! This crate implements `org.freedesktop.impl.portal.RemoteDesktop`
 //! interface for the COSMIC Wayland compositor.

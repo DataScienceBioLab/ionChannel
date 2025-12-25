@@ -14,10 +14,10 @@ use crate::platform::Platform;
 /// Platform-agnostic screen capture interface.
 ///
 /// Implementations provide screen capture for different platforms:
-/// - Linux/Wayland: PipeWire + dmabuf/shm
-/// - Linux/X11: XShm, DRI3
+/// - Linux/Wayland: `PipeWire` + dmabuf/shm
+/// - Linux/X11: `XShm`, DRI3
 /// - Windows: DXGI Desktop Duplication
-/// - macOS: ScreenCaptureKit
+/// - macOS: `ScreenCaptureKit`
 ///
 /// # Example
 ///
@@ -267,7 +267,7 @@ pub struct FrameMetadata {
 pub enum PlatformFrameData {
     /// Wayland-specific data
     Wayland {
-        /// PipeWire node ID
+        /// `PipeWire` node ID
         pipewire_node: Option<u32>,
         /// Output index
         output_index: u32,

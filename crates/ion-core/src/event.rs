@@ -10,7 +10,7 @@
 //!
 //! - All coordinates are `f64` for sub-pixel precision
 //! - Button/key codes use `i32` to match Linux evdev
-//! - Stream IDs are `u32` to match PipeWire node IDs
+//! - Stream IDs are `u32` to match `PipeWire` node IDs
 
 use serde::{Deserialize, Serialize};
 
@@ -123,7 +123,7 @@ pub enum InputEvent {
 
     /// Absolute pointer motion (within a stream/output)
     PointerMotionAbsolute {
-        /// PipeWire stream ID (maps to output)
+        /// `PipeWire` stream ID (maps to output)
         stream: u32,
         /// X coordinate within stream bounds
         x: f64,
@@ -133,7 +133,7 @@ pub enum InputEvent {
 
     /// Pointer button press/release
     PointerButton {
-        /// Linux evdev button code (BTN_LEFT = 0x110, etc.)
+        /// Linux evdev button code (`BTN_LEFT` = 0x110, etc.)
         button: i32,
         /// Button state
         state: ButtonState,
@@ -173,7 +173,7 @@ pub enum InputEvent {
 
     /// Touch down event (finger placed)
     TouchDown {
-        /// PipeWire stream ID (maps to output)
+        /// `PipeWire` stream ID (maps to output)
         stream: u32,
         /// Touch slot (finger ID)
         slot: u32,
@@ -185,7 +185,7 @@ pub enum InputEvent {
 
     /// Touch motion event (finger moved)
     TouchMotion {
-        /// PipeWire stream ID
+        /// `PipeWire` stream ID
         stream: u32,
         /// Touch slot (finger ID)
         slot: u32,
@@ -428,7 +428,7 @@ mod tests {
     #[test]
     fn event_debug() {
         let event = InputEvent::pointer_motion(5.0, 10.0);
-        let debug = format!("{:?}", event);
+        let debug = format!("{event:?}");
         assert!(debug.contains("PointerMotion"));
     }
 

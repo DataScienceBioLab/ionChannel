@@ -275,7 +275,7 @@ mod tests {
     #[test]
     fn error_debug() {
         let err = Error::ChannelClosed;
-        assert!(!format!("{:?}", err).is_empty());
+        assert!(!format!("{err:?}").is_empty());
     }
 
     #[test]
