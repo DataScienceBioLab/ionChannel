@@ -85,6 +85,7 @@ must_use_candidate = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 doc_markdown = "allow"
+float_cmp = "allow"  # Tests use exact float comparisons
 significant_drop_tightening = "allow"
 
 [profile.dev]
