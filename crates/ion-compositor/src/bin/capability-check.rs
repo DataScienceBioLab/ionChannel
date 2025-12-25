@@ -29,10 +29,10 @@ async fn main() {
 
     // Environment info
     println!("┌─ Environment ─────────────────────────────────────────────────┐");
-    
+
     let wayland = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "not set".into());
     let runtime = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "not set".into());
-    
+
     println!("│ WAYLAND_DISPLAY:  {:<42} │", wayland);
     println!("│ XDG_RUNTIME_DIR:  {:<42} │", truncate(&runtime, 42));
     println!("└────────────────────────────────────────────────────────────────┘");
@@ -40,30 +40,56 @@ async fn main() {
 
     // Tier detection
     println!("┌─ Capture Tier Detection ──────────────────────────────────────┐");
-    
+
     let tier_selector = TierSelector::new();
     let env = tier_selector.env_info();
-    
-    println!("│ VM Detected:      {:<42} │", if env.is_vm { "Yes" } else { "No" });
-    println!("│ DRM Available:    {:<42} │", if env.has_drm { "Yes" } else { "No" });
-    println!("│ GPU Vendor:       {:<42} │", env.gpu_vendor.as_deref().unwrap_or("Unknown"));
-    println!("│ dmabuf Likely:    {:<42} │", if env.dmabuf_likely_works() { "Yes" } else { "No" });
+
+    println!(
+        "│ VM Detected:      {:<42} │",
+        if env.is_vm { "Yes" } else { "No" }
+    );
+    println!(
+        "│ DRM Available:    {:<42} │",
+        if env.has_drm { "Yes" } else { "No" }
+    );
+    println!(
+        "│ GPU Vendor:       {:<42} │",
+        env.gpu_vendor.as_deref().unwrap_or("Unknown")
+    );
+    println!(
+        "│ dmabuf Likely:    {:<42} │",
+        if env.dmabuf_likely_works() {
+            "Yes"
+        } else {
+            "No"
+        }
+    );
     println!("└────────────────────────────────────────────────────────────────┘");
     println!();
 
     // Full capability probe
     println!("┌─ Capability Probe ────────────────────────────────────────────┐");
-    
+
     let mut provider = CapabilityProvider::new();
     provider.probe().await;
-    
+
     let caps = provider.session_capabilities();
     let mode = provider.best_mode();
-    
-    println!("│ Capture Available: {:<41} │", if caps.capture_available { "Yes" } else { "No" });
-    println!("│ Capture Tier:      {:<41} │", 
-        provider.capture_tier().map_or("None".into(), |t| t.name().to_string()));
-    println!("│ Input Available:   {:<41} │", if caps.input_available { "Yes" } else { "No" });
+
+    println!(
+        "│ Capture Available: {:<41} │",
+        if caps.capture_available { "Yes" } else { "No" }
+    );
+    println!(
+        "│ Capture Tier:      {:<41} │",
+        provider
+            .capture_tier()
+            .map_or("None".into(), |t| t.name().to_string())
+    );
+    println!(
+        "│ Input Available:   {:<41} │",
+        if caps.input_available { "Yes" } else { "No" }
+    );
     println!("│                                                              │");
     println!("│ ▶ Session Mode:    {:<41} │", mode.name());
     println!("└────────────────────────────────────────────────────────────────┘");
@@ -77,25 +103,25 @@ async fn main() {
             println!("│    - Screen capture works                                     │");
             println!("│    - Input injection works                                    │");
             println!("│    - RustDesk should work completely                          │");
-        }
+        },
         ion_core::RemoteDesktopMode::InputOnly => {
             println!("│ ⚠️  Input-only mode (capture unavailable)                     │");
             println!("│    - Screen capture NOT available                             │");
             println!("│    - Input injection WORKS                                    │");
             println!("│    - RustDesk can control but not see screen                  │");
             println!("│    - Useful for blind control, automation, VM environments    │");
-        }
+        },
         ion_core::RemoteDesktopMode::ViewOnly => {
             println!("│ ⚠️  View-only mode (input unavailable)                        │");
             println!("│    - Screen capture works                                     │");
             println!("│    - Input injection NOT available                            │");
             println!("│    - Screen sharing only                                      │");
-        }
+        },
         ion_core::RemoteDesktopMode::None => {
             println!("│ ❌ No remote desktop capabilities available                   │");
             println!("│    - Check WAYLAND_DISPLAY is set                             │");
             println!("│    - Ensure running in graphical session                      │");
-        }
+        },
     }
     println!("└────────────────────────────────────────────────────────────────┘");
     println!();
@@ -111,4 +137,3 @@ fn truncate(s: &str, max: usize) -> String {
         format!("{}...", &s[..max - 3])
     }
 }
-

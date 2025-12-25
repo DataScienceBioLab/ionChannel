@@ -464,7 +464,7 @@ mod tests {
             gpu_vendor: Some("AMD".to_string()),
         };
         let selector = TierSelector::with_env(env);
-        
+
         // None is always available
         assert!(selector.select_tier(CaptureTier::None).await.is_some());
     }
@@ -479,7 +479,7 @@ mod tests {
             gpu_vendor: None,
         };
         let selector = TierSelector::with_env(env);
-        
+
         // SHM should work with wayland and runtime dir
         assert!(selector.select_tier(CaptureTier::Shm).await.is_some());
     }
@@ -494,7 +494,7 @@ mod tests {
             gpu_vendor: None,
         };
         let selector = TierSelector::with_env(env);
-        
+
         // CPU should work with just wayland
         assert!(selector.select_tier(CaptureTier::Cpu).await.is_some());
     }
@@ -502,7 +502,10 @@ mod tests {
     #[test]
     fn tier_selector_default_impl() {
         let selector = TierSelector::default();
-        assert!(!selector.env_info().wayland_display.is_none() || selector.env_info().wayland_display.is_none());
+        assert!(
+            !selector.env_info().wayland_display.is_none()
+                || selector.env_info().wayland_display.is_none()
+        );
     }
 
     #[tokio::test]
@@ -560,7 +563,7 @@ mod tests {
             gpu_vendor: Some("NVIDIA".to_string()),
         };
         let selector = TierSelector::with_env(env);
-        
+
         // Dmabuf should be available
         assert!(selector.select_tier(CaptureTier::Dmabuf).await.is_some());
     }
@@ -575,7 +578,7 @@ mod tests {
             gpu_vendor: Some("QEMU".to_string()), // QEMU = dmabuf won't work
         };
         let selector = TierSelector::with_env(env);
-        
+
         // Dmabuf should NOT be available
         assert!(selector.select_tier(CaptureTier::Dmabuf).await.is_none());
     }
@@ -614,4 +617,3 @@ mod tests {
         assert_send_sync::<TierSelector>();
     }
 }
-

@@ -93,7 +93,7 @@ async fn per_session_rate_tracking() {
         window: Duration::from_secs(1),
     };
     let limiter = RateLimiter::new(config);
-    
+
     let session1 = SessionId::new("/test/rate/session1");
     let session2 = SessionId::new("/test/rate/session2");
 

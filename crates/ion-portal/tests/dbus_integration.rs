@@ -46,9 +46,7 @@ impl DbusTestEnv {
                 std::process::id()
             );
 
-            conn.object_server()
-                .at(path.as_str(), portal)
-                .await?;
+            conn.object_server().at(path.as_str(), portal).await?;
 
             return Ok(Self {
                 daemon: None,
@@ -190,7 +188,7 @@ async fn test_dbus_properties() {
         Err(e) => {
             eprintln!("Skipping: Failed to create D-Bus env: {}", e);
             return;
-        }
+        },
     };
 
     let path = format!(
@@ -209,7 +207,7 @@ async fn test_dbus_properties() {
         Err(e) => {
             eprintln!("Skipping: Failed to create proxy: {}", e);
             return;
-        }
+        },
     };
 
     // Test properties
@@ -232,7 +230,7 @@ async fn test_dbus_create_session() {
         Err(e) => {
             eprintln!("Skipping: Failed to create D-Bus env: {}", e);
             return;
-        }
+        },
     };
 
     let path = format!(
@@ -250,7 +248,7 @@ async fn test_dbus_create_session() {
         Err(e) => {
             eprintln!("Skipping: Failed to create proxy: {}", e);
             return;
-        }
+        },
     };
 
     let handle = ObjectPath::try_from("/request/1").unwrap();
@@ -277,7 +275,7 @@ async fn test_dbus_full_session_lifecycle() {
         Err(e) => {
             eprintln!("Skipping: Failed to create D-Bus env: {}", e);
             return;
-        }
+        },
     };
 
     let path = format!(
@@ -295,7 +293,7 @@ async fn test_dbus_full_session_lifecycle() {
         Err(e) => {
             eprintln!("Skipping: Failed to create proxy: {}", e);
             return;
-        }
+        },
     };
 
     let handle = ObjectPath::try_from("/request/lifecycle").unwrap();
@@ -394,7 +392,7 @@ async fn test_dbus_session_not_found() {
         Err(e) => {
             eprintln!("Skipping: Failed to create D-Bus env: {}", e);
             return;
-        }
+        },
     };
 
     let path = format!(
@@ -412,7 +410,7 @@ async fn test_dbus_session_not_found() {
         Err(e) => {
             eprintln!("Skipping: Failed to create proxy: {}", e);
             return;
-        }
+        },
     };
 
     // Try to send event to non-existent session
@@ -437,7 +435,7 @@ async fn test_dbus_mode_reporting() {
         Err(e) => {
             eprintln!("Skipping: No D-Bus session: {}", e);
             return;
-        }
+        },
     };
 
     let (manager, _rx) = SessionManager::new(SessionManagerConfig::default());
@@ -467,12 +465,22 @@ async fn test_dbus_mode_reporting() {
 
     // Create and start session
     proxy
-        .create_session(handle.clone(), session_handle.clone(), "mode-test", HashMap::new())
+        .create_session(
+            handle.clone(),
+            session_handle.clone(),
+            "mode-test",
+            HashMap::new(),
+        )
         .await
         .unwrap();
 
     proxy
-        .select_devices(handle.clone(), session_handle.clone(), "mode-test", HashMap::new())
+        .select_devices(
+            handle.clone(),
+            session_handle.clone(),
+            "mode-test",
+            HashMap::new(),
+        )
         .await
         .unwrap();
 
@@ -502,4 +510,3 @@ async fn test_dbus_mode_reporting() {
         .unwrap();
     assert!(input_available);
 }
-

@@ -19,9 +19,9 @@ pub enum FrameFormat {
     /// 32-bit XBGR (no alpha, X ignored).
     Xbgr8888 = 0x34324258, // DRM_FORMAT_XBGR8888
     /// 24-bit RGB (no alpha).
-    Rgb888 = 0x34324752,   // DRM_FORMAT_RGB888
+    Rgb888 = 0x34324752, // DRM_FORMAT_RGB888
     /// 24-bit BGR (no alpha).
-    Bgr888 = 0x52474218,   // DRM_FORMAT_BGR888
+    Bgr888 = 0x52474218, // DRM_FORMAT_BGR888
 }
 
 impl FrameFormat {
@@ -184,7 +184,7 @@ impl CaptureFrame {
                     chunk.swap(0, 2);
                 }
                 data
-            }
+            },
             _ => return None, // Unsupported conversion
         };
 
@@ -349,9 +349,7 @@ mod tests {
 
     #[test]
     fn frame_metadata_builder_defaults() {
-        let metadata = FrameMetadataBuilder::new()
-            .dimensions(100, 100)
-            .build();
+        let metadata = FrameMetadataBuilder::new().dimensions(100, 100).build();
 
         assert_eq!(metadata.sequence, 0);
         assert_eq!(metadata.format, FrameFormat::Bgra8888);
@@ -392,9 +390,7 @@ mod tests {
 
     #[test]
     fn frame_metadata_age() {
-        let metadata = FrameMetadataBuilder::new()
-            .dimensions(100, 100)
-            .build();
+        let metadata = FrameMetadataBuilder::new().dimensions(100, 100).build();
 
         std::thread::sleep(Duration::from_millis(5));
         assert!(metadata.age() >= Duration::from_millis(5));
@@ -402,9 +398,7 @@ mod tests {
 
     #[test]
     fn capture_frame_new() {
-        let metadata = FrameMetadataBuilder::new()
-            .dimensions(10, 10)
-            .build();
+        let metadata = FrameMetadataBuilder::new().dimensions(10, 10).build();
         let data = vec![0u8; 400];
         let frame = CaptureFrame::new(metadata, data);
 
@@ -415,9 +409,7 @@ mod tests {
 
     #[test]
     fn capture_frame_with_shared_data() {
-        let metadata = FrameMetadataBuilder::new()
-            .dimensions(10, 10)
-            .build();
+        let metadata = FrameMetadataBuilder::new().dimensions(10, 10).build();
         let shared = Arc::new(vec![0u8; 400]);
         let frame = CaptureFrame::with_shared_data(metadata, shared.clone());
 
@@ -437,9 +429,7 @@ mod tests {
 
     #[test]
     fn capture_frame_is_fresh() {
-        let metadata = FrameMetadataBuilder::new()
-            .dimensions(10, 10)
-            .build();
+        let metadata = FrameMetadataBuilder::new().dimensions(10, 10).build();
         let frame = CaptureFrame::new(metadata, vec![0u8; 400]);
 
         assert!(frame.is_fresh(Duration::from_secs(1)));
@@ -508,7 +498,7 @@ mod tests {
         let frame = CaptureFrame::new(metadata, data);
 
         let converted = frame.convert_to(FrameFormat::Bgra8888).unwrap();
-        assert_eq!(converted.data()[0], 64);  // Blue
+        assert_eq!(converted.data()[0], 64); // Blue
         assert_eq!(converted.data()[2], 255); // Red
     }
 
@@ -546,4 +536,3 @@ mod tests {
         assert_send_sync::<CaptureFrame>();
     }
 }
-

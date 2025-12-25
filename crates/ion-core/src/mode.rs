@@ -271,10 +271,22 @@ mod tests {
 
     #[test]
     fn session_capabilities_modes() {
-        assert_eq!(SessionCapabilities::full().best_mode(), RemoteDesktopMode::Full);
-        assert_eq!(SessionCapabilities::input_only().best_mode(), RemoteDesktopMode::InputOnly);
-        assert_eq!(SessionCapabilities::view_only().best_mode(), RemoteDesktopMode::ViewOnly);
-        assert_eq!(SessionCapabilities::none().best_mode(), RemoteDesktopMode::None);
+        assert_eq!(
+            SessionCapabilities::full().best_mode(),
+            RemoteDesktopMode::Full
+        );
+        assert_eq!(
+            SessionCapabilities::input_only().best_mode(),
+            RemoteDesktopMode::InputOnly
+        );
+        assert_eq!(
+            SessionCapabilities::view_only().best_mode(),
+            RemoteDesktopMode::ViewOnly
+        );
+        assert_eq!(
+            SessionCapabilities::none().best_mode(),
+            RemoteDesktopMode::None
+        );
     }
 
     #[test]
@@ -351,4 +363,3 @@ mod tests {
         assert_eq!(caps, caps_cloned);
     }
 }
-

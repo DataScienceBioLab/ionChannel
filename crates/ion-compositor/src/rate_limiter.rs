@@ -279,7 +279,10 @@ mod tests {
 
         // 6th should be blocked
         let result = limiter.check(&session).await;
-        assert!(result.is_err(), "6th event should be blocked by burst limit");
+        assert!(
+            result.is_err(),
+            "6th event should be blocked by burst limit"
+        );
     }
 
     #[tokio::test]
@@ -300,8 +303,14 @@ mod tests {
         }
 
         // Session1 blocked, but session2 should still work
-        assert!(limiter.check(&session1).await.is_err(), "session1 should be blocked");
-        assert!(limiter.check(&session2).await.is_ok(), "session2 should still work");
+        assert!(
+            limiter.check(&session1).await.is_err(),
+            "session1 should be blocked"
+        );
+        assert!(
+            limiter.check(&session2).await.is_ok(),
+            "session2 should still work"
+        );
     }
 
     #[tokio::test]

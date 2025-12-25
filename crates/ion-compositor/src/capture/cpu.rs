@@ -27,8 +27,8 @@ use tokio::sync::{broadcast, Mutex, RwLock};
 use tracing::{debug, info, warn};
 
 use super::{
-    CaptureCapabilities, CaptureFrame, CaptureResult, FrameFormat,
-    FrameMetadataBuilder, ScreenCapture,
+    CaptureCapabilities, CaptureFrame, CaptureResult, FrameFormat, FrameMetadataBuilder,
+    ScreenCapture,
 };
 use crate::capture::CaptureTier;
 
@@ -179,23 +179,23 @@ impl CpuCapture {
                         if bpp == 4 {
                             data[pixel_offset + 3] = 255;
                         }
-                    }
+                    },
                     FrameFormat::Rgba8888 => {
                         data[pixel_offset] = r;
                         data[pixel_offset + 1] = g;
                         data[pixel_offset + 2] = b;
                         data[pixel_offset + 3] = 255;
-                    }
+                    },
                     FrameFormat::Rgb888 => {
                         data[pixel_offset] = r;
                         data[pixel_offset + 1] = g;
                         data[pixel_offset + 2] = b;
-                    }
+                    },
                     FrameFormat::Bgr888 => {
                         data[pixel_offset] = b;
                         data[pixel_offset + 1] = g;
                         data[pixel_offset + 2] = r;
-                    }
+                    },
                 }
             }
         }
@@ -222,7 +222,9 @@ impl ScreenCapture for CpuCapture {
         &self.capabilities
     }
 
-    fn capture_frame(&self) -> Pin<Box<dyn Future<Output = CaptureResult<CaptureFrame>> + Send + '_>> {
+    fn capture_frame(
+        &self,
+    ) -> Pin<Box<dyn Future<Output = CaptureResult<CaptureFrame>> + Send + '_>> {
         Box::pin(self.do_capture())
     }
 
@@ -299,10 +301,10 @@ mod tests {
     #[tokio::test]
     async fn cpu_capture_multiple_frames() {
         let capture = CpuCapture::with_defaults(100, 100);
-        
+
         let frame1 = capture.do_capture().await.unwrap();
         let frame2 = capture.do_capture().await.unwrap();
-        
+
         // Sequence should increment
         assert_eq!(frame1.metadata.sequence + 1, frame2.metadata.sequence);
     }
@@ -398,7 +400,7 @@ mod tests {
         };
         let capture = CpuCapture::new(64, 64, config);
         let data = capture.generate_fallback_frame(64, 64, 0);
-        
+
         // BGRA8888: 4 bytes per pixel
         assert_eq!(data.len(), 64 * 64 * 4);
     }
@@ -411,7 +413,7 @@ mod tests {
         };
         let capture = CpuCapture::new(64, 64, config);
         let data = capture.generate_fallback_frame(64, 64, 0);
-        
+
         assert_eq!(data.len(), 64 * 64 * 4);
     }
 
@@ -423,7 +425,7 @@ mod tests {
         };
         let capture = CpuCapture::new(64, 64, config);
         let data = capture.generate_fallback_frame(64, 64, 0);
-        
+
         // RGB888: 3 bytes per pixel
         assert_eq!(data.len(), 64 * 64 * 3);
     }
@@ -436,7 +438,7 @@ mod tests {
         };
         let capture = CpuCapture::new(64, 64, config);
         let data = capture.generate_fallback_frame(64, 64, 0);
-        
+
         assert_eq!(data.len(), 64 * 64 * 3);
     }
 
@@ -447,4 +449,3 @@ mod tests {
         assert_send_sync::<CpuCaptureConfig>();
     }
 }
-

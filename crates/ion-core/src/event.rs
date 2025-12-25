@@ -350,31 +350,41 @@ mod tests {
     fn left_click_constructor() {
         let down = InputEvent::left_click(true);
         let up = InputEvent::left_click(false);
-        
+
         assert!(down.is_pointer());
         assert!(up.is_pointer());
-        
+
         match down {
             InputEvent::PointerButton { button, state } => {
                 assert_eq!(button, 0x110); // BTN_LEFT
                 assert_eq!(state, ButtonState::Pressed);
-            }
+            },
             _ => panic!("Expected PointerButton"),
         }
-        
+
         match up {
             InputEvent::PointerButton { button, state } => {
                 assert_eq!(button, 0x110);
                 assert_eq!(state, ButtonState::Released);
-            }
+            },
             _ => panic!("Expected PointerButton"),
         }
     }
 
     #[test]
     fn touch_events() {
-        let down = InputEvent::TouchDown { stream: 0, slot: 0, x: 50.0, y: 100.0 };
-        let motion = InputEvent::TouchMotion { stream: 0, slot: 0, x: 60.0, y: 110.0 };
+        let down = InputEvent::TouchDown {
+            stream: 0,
+            slot: 0,
+            x: 50.0,
+            y: 100.0,
+        };
+        let motion = InputEvent::TouchMotion {
+            stream: 0,
+            slot: 0,
+            x: 60.0,
+            y: 110.0,
+        };
         let up = InputEvent::TouchUp { slot: 0 };
 
         assert!(down.is_touch());
@@ -388,7 +398,10 @@ mod tests {
     #[test]
     fn pointer_axis_events() {
         let smooth = InputEvent::PointerAxis { dx: 0.0, dy: -10.0 };
-        let discrete = InputEvent::PointerAxisDiscrete { axis: Axis::Vertical, steps: -1 };
+        let discrete = InputEvent::PointerAxisDiscrete {
+            axis: Axis::Vertical,
+            steps: -1,
+        };
 
         assert!(smooth.is_pointer());
         assert!(discrete.is_pointer());
@@ -396,7 +409,10 @@ mod tests {
 
     #[test]
     fn keyboard_keysym() {
-        let event = InputEvent::KeyboardKeysym { keysym: 0x61, state: KeyState::Pressed };
+        let event = InputEvent::KeyboardKeysym {
+            keysym: 0x61,
+            state: KeyState::Pressed,
+        };
         assert!(event.is_keyboard());
         assert!(!event.is_pointer());
         assert!(!event.is_touch());

@@ -128,7 +128,7 @@ async fn can_send_events_when_active() {
         InputEvent::PointerMotion { dx, dy } => {
             assert_eq!(dx, 10.0);
             assert_eq!(dy, 5.0);
-        }
+        },
         _ => panic!("unexpected event type"),
     }
 

@@ -197,13 +197,13 @@ impl RemoteDesktopPortal {
         match session.start().await {
             Ok(()) => {
                 let mut result = HashMap::new();
-                
+
                 // Standard portal response: authorized devices
                 result.insert(
                     "devices".to_string(),
                     OwnedValue::try_from(session.authorized_devices().await.bits()).unwrap(),
                 );
-                
+
                 // ionChannel extension: session mode info
                 let mode = self.session_mode;
                 result.insert(
@@ -218,7 +218,7 @@ impl RemoteDesktopPortal {
                     "input_available".to_string(),
                     OwnedValue::try_from(mode.has_input()).unwrap(),
                 );
-                
+
                 info!(
                     session = %session_id,
                     mode = %mode,
@@ -484,7 +484,10 @@ mod tests {
 
         // Create a session directly via the manager
         let session_id = SessionId::new("/test/session/1");
-        manager.create_session(session_id.clone(), "test-app".to_string()).await.unwrap();
+        manager
+            .create_session(session_id.clone(), "test-app".to_string())
+            .await
+            .unwrap();
 
         assert_eq!(manager.session_count().await, 1);
         assert!(manager.get_session(&session_id).await.is_some());
@@ -502,7 +505,10 @@ mod tests {
         // Create multiple sessions
         for i in 0..5 {
             let session_id = SessionId::new(&format!("/test/session/{}", i));
-            manager.create_session(session_id, format!("app-{}", i)).await.unwrap();
+            manager
+                .create_session(session_id, format!("app-{}", i))
+                .await
+                .unwrap();
         }
 
         assert_eq!(manager.session_count().await, 5);
@@ -518,10 +524,16 @@ mod tests {
         let manager = portal.session_manager();
 
         let session_id = SessionId::new("/test/event/session");
-        let session = manager.create_session(session_id.clone(), "test".to_string()).await.unwrap();
+        let session = manager
+            .create_session(session_id.clone(), "test".to_string())
+            .await
+            .unwrap();
 
         // Select devices
-        session.select_devices(DeviceType::KEYBOARD | DeviceType::POINTER).await.unwrap();
+        session
+            .select_devices(DeviceType::KEYBOARD | DeviceType::POINTER)
+            .await
+            .unwrap();
 
         // Start session
         session.start().await.unwrap();
@@ -542,7 +554,10 @@ mod tests {
         let manager = portal.session_manager();
 
         let session_id = SessionId::new("/test/inactive/session");
-        let session = manager.create_session(session_id, "test".to_string()).await.unwrap();
+        let session = manager
+            .create_session(session_id, "test".to_string())
+            .await
+            .unwrap();
         session.select_devices(DeviceType::POINTER).await.unwrap();
 
         // Don't start - should fail
@@ -557,14 +572,20 @@ mod tests {
         let manager = portal.session_manager();
 
         let session_id = SessionId::new("/test/auth/session");
-        let session = manager.create_session(session_id, "test".to_string()).await.unwrap();
+        let session = manager
+            .create_session(session_id, "test".to_string())
+            .await
+            .unwrap();
 
         // Only authorize keyboard
         session.select_devices(DeviceType::KEYBOARD).await.unwrap();
         session.start().await.unwrap();
 
         // Keyboard event should work
-        let keyboard_event = InputEvent::KeyboardKeycode { keycode: 30, state: KeyState::Pressed };
+        let keyboard_event = InputEvent::KeyboardKeycode {
+            keycode: 30,
+            state: KeyState::Pressed,
+        };
         let result = session.send_event(keyboard_event).await;
         assert!(result.is_ok());
 
@@ -583,15 +604,25 @@ mod tests {
         let manager = portal.session_manager();
 
         let session_id = SessionId::new("/test/events/session");
-        let session = manager.create_session(session_id, "test".to_string()).await.unwrap();
+        let session = manager
+            .create_session(session_id, "test".to_string())
+            .await
+            .unwrap();
         session.select_devices(DeviceType::all()).await.unwrap();
         session.start().await.unwrap();
 
         // Test pointer events
         let events = vec![
             InputEvent::PointerMotion { dx: 1.0, dy: 2.0 },
-            InputEvent::PointerMotionAbsolute { stream: 0, x: 100.0, y: 200.0 },
-            InputEvent::PointerButton { button: 1, state: ButtonState::Pressed },
+            InputEvent::PointerMotionAbsolute {
+                stream: 0,
+                x: 100.0,
+                y: 200.0,
+            },
+            InputEvent::PointerButton {
+                button: 1,
+                state: ButtonState::Pressed,
+            },
             InputEvent::PointerAxis { dx: 0.0, dy: -10.0 },
         ];
 
@@ -623,7 +654,10 @@ mod tests {
         let manager = portal.session_manager();
 
         let session_id = SessionId::new("/test/cleanup/session");
-        let _session = manager.create_session(session_id.clone(), "test".to_string()).await.unwrap();
+        let _session = manager
+            .create_session(session_id.clone(), "test".to_string())
+            .await
+            .unwrap();
 
         assert_eq!(manager.session_count().await, 1);
 
@@ -638,7 +672,10 @@ mod tests {
         let manager = portal.session_manager();
 
         let session_id = SessionId::new("/test/duplicate");
-        manager.create_session(session_id.clone(), "test".to_string()).await.unwrap();
+        manager
+            .create_session(session_id.clone(), "test".to_string())
+            .await
+            .unwrap();
 
         // Second create should fail
         let result = manager.create_session(session_id, "test".to_string()).await;
@@ -655,11 +692,19 @@ mod tests {
         let portal = RemoteDesktopPortal::new(manager);
         let manager = portal.session_manager();
 
-        manager.create_session(SessionId::new("/s/1"), "a".to_string()).await.unwrap();
-        manager.create_session(SessionId::new("/s/2"), "b".to_string()).await.unwrap();
+        manager
+            .create_session(SessionId::new("/s/1"), "a".to_string())
+            .await
+            .unwrap();
+        manager
+            .create_session(SessionId::new("/s/2"), "b".to_string())
+            .await
+            .unwrap();
 
         // Third should fail
-        let result = manager.create_session(SessionId::new("/s/3"), "c".to_string()).await;
+        let result = manager
+            .create_session(SessionId::new("/s/3"), "c".to_string())
+            .await;
         assert!(result.is_err());
     }
 
@@ -668,8 +713,14 @@ mod tests {
         let (portal, _rx) = create_test_portal();
         let manager = portal.session_manager();
 
-        manager.create_session(SessionId::new("/a"), "a".to_string()).await.unwrap();
-        manager.create_session(SessionId::new("/b"), "b".to_string()).await.unwrap();
+        manager
+            .create_session(SessionId::new("/a"), "a".to_string())
+            .await
+            .unwrap();
+        manager
+            .create_session(SessionId::new("/b"), "b".to_string())
+            .await
+            .unwrap();
 
         let ids = manager.session_ids().await;
         assert_eq!(ids.len(), 2);

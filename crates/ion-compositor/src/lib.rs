@@ -79,9 +79,8 @@ pub mod virtual_input;
 // Re-exports for convenience
 pub use capabilities::{detect_best_mode, is_input_only_possible, CapabilityProvider};
 pub use capture::{
-    CaptureCapabilities, CaptureError, CaptureFrame, CaptureResult, CaptureTier,
-    CpuCapture, DmabufCapture, FrameFormat, ScreenCapture, ScreenCaptureExt,
-    ShmCapture, TierSelector,
+    CaptureCapabilities, CaptureError, CaptureFrame, CaptureResult, CaptureTier, CpuCapture,
+    DmabufCapture, FrameFormat, ScreenCapture, ScreenCaptureExt, ShmCapture, TierSelector,
 };
 pub use compat::{adapt, CaptureAdapter};
 pub use dbus_service::RemoteDesktopService;

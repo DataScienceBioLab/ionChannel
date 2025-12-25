@@ -277,7 +277,11 @@ mod tests {
 
     #[test]
     fn touch_event_down() {
-        let event = TouchEvent::Down { slot: 0, x: 100.0, y: 200.0 };
+        let event = TouchEvent::Down {
+            slot: 0,
+            x: 100.0,
+            y: 200.0,
+        };
         if let TouchEvent::Down { slot, x, y } = event {
             assert_eq!(slot, 0);
             assert_eq!(x, 100.0);
@@ -295,4 +299,3 @@ mod tests {
         assert!(!caps.touch);
     }
 }
-

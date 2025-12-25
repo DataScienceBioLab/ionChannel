@@ -323,4 +323,3 @@ mod tests {
         assert_eq!(caps.max_sessions, 10);
     }
 }
-

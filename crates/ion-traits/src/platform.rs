@@ -127,4 +127,3 @@ mod tests {
         let _ = Platform::default();
     }
 }
-

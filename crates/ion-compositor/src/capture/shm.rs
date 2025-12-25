@@ -180,11 +180,7 @@ impl ShmCapture {
 
         debug!(
             sequence,
-            width,
-            height,
-            stride,
-            size,
-            "Starting SHM capture"
+            width, height, stride, size, "Starting SHM capture"
         );
 
         // TODO: Real implementation would:
@@ -265,20 +261,20 @@ impl ShmCapture {
                         data[offset + 1] = g;
                         data[offset + 2] = r;
                         data[offset + 3] = 255;
-                    }
+                    },
                     FrameFormat::Rgba8888 => {
                         data[offset] = r;
                         data[offset + 1] = g;
                         data[offset + 2] = b;
                         data[offset + 3] = 255;
-                    }
+                    },
                     _ => {
                         // Default to BGRA order
                         data[offset] = b;
                         data[offset + 1] = g;
                         data[offset + 2] = r;
                         data[offset + 3] = 255;
-                    }
+                    },
                 }
             }
         }
@@ -314,10 +310,10 @@ impl ShmCapture {
                     let frame = Arc::new(frame);
                     // Ignore send errors (no receivers)
                     let _ = tx.send(frame);
-                }
+                },
                 Err(e) => {
                     warn!(error = %e, "Frame capture failed, skipping");
-                }
+                },
             }
         }
 
@@ -330,7 +326,9 @@ impl ScreenCapture for ShmCapture {
         &self.capabilities
     }
 
-    fn capture_frame(&self) -> Pin<Box<dyn Future<Output = CaptureResult<CaptureFrame>> + Send + '_>> {
+    fn capture_frame(
+        &self,
+    ) -> Pin<Box<dyn Future<Output = CaptureResult<CaptureFrame>> + Send + '_>> {
         Box::pin(self.do_capture())
     }
 
@@ -568,9 +566,7 @@ mod tests {
 
     #[tokio::test]
     async fn shm_builder_try_build_ok() {
-        let result = ShmCaptureBuilder::new()
-            .dimensions(100, 100)
-            .try_build();
+        let result = ShmCaptureBuilder::new().dimensions(100, 100).try_build();
         assert!(result.is_ok());
     }
 
@@ -656,11 +652,11 @@ mod tests {
     #[tokio::test]
     async fn shm_multiple_resizes() {
         let capture = ShmCapture::with_defaults(100, 100);
-        
+
         capture.resize(200, 200).await;
         let frame = capture.do_capture().await.unwrap();
         assert_eq!(frame.width(), 200);
-        
+
         capture.resize(50, 50).await;
         let frame = capture.do_capture().await.unwrap();
         assert_eq!(frame.width(), 50);
@@ -678,4 +674,3 @@ mod tests {
         assert_eq!(config.buffer_count, 4);
     }
 }
-

@@ -262,7 +262,9 @@ mod tests {
         let session = manager.get_session(&SessionId::new("/test/get")).await;
         assert!(session.is_some());
 
-        let no_session = manager.get_session(&SessionId::new("/test/nonexistent")).await;
+        let no_session = manager
+            .get_session(&SessionId::new("/test/nonexistent"))
+            .await;
         assert!(no_session.is_none());
     }
 
@@ -359,7 +361,9 @@ mod tests {
         assert_eq!(manager2.session_count().await, 1);
 
         // Close from cloned manager
-        manager2.close_session(&SessionId::new("/test/shared")).await;
+        manager2
+            .close_session(&SessionId::new("/test/shared"))
+            .await;
 
         // Both should see it closed
         assert_eq!(manager1.session_count().await, 0);

@@ -127,7 +127,10 @@ impl PortalCore {
         info!("CreateSession called");
 
         let id = SessionId::new(&session_id);
-        let session = self.session_manager.create_session(id.clone(), app_id).await?;
+        let session = self
+            .session_manager
+            .create_session(id.clone(), app_id)
+            .await?;
 
         info!(session = %session.id(), "Session created successfully");
         Ok(CreateSessionResponse {
@@ -163,7 +166,10 @@ impl PortalCore {
 
     /// Starts the remote desktop session.
     #[instrument(skip(self))]
-    pub async fn start_session(&self, request: StartSessionRequest) -> Result<StartSessionResponse> {
+    pub async fn start_session(
+        &self,
+        request: StartSessionRequest,
+    ) -> Result<StartSessionResponse> {
         info!("Start called");
 
         let session_id = SessionId::new(&request.session_id);
@@ -216,14 +222,11 @@ impl PortalCore {
 
     /// Notifies the compositor of relative pointer motion.
     #[instrument(skip(self))]
-    pub async fn notify_pointer_motion(
-        &self,
-        session_id: &str,
-        dx: f64,
-        dy: f64,
-    ) -> Result<()> {
+    pub async fn notify_pointer_motion(&self, session_id: &str, dx: f64, dy: f64) -> Result<()> {
         let session = self.get_session(session_id).await?;
-        session.send_event(InputEvent::PointerMotion { dx, dy }).await
+        session
+            .send_event(InputEvent::PointerMotion { dx, dy })
+            .await
     }
 
     /// Notifies the compositor of absolute pointer motion.
@@ -236,7 +239,9 @@ impl PortalCore {
         y: f64,
     ) -> Result<()> {
         let session = self.get_session(session_id).await?;
-        session.send_event(InputEvent::PointerMotionAbsolute { stream, x, y }).await
+        session
+            .send_event(InputEvent::PointerMotionAbsolute { stream, x, y })
+            .await
     }
 
     /// Notifies the compositor of a pointer button event.
@@ -248,17 +253,14 @@ impl PortalCore {
         state: ButtonState,
     ) -> Result<()> {
         let session = self.get_session(session_id).await?;
-        session.send_event(InputEvent::PointerButton { button, state }).await
+        session
+            .send_event(InputEvent::PointerButton { button, state })
+            .await
     }
 
     /// Notifies the compositor of pointer scroll/axis events.
     #[instrument(skip(self))]
-    pub async fn notify_pointer_axis(
-        &self,
-        session_id: &str,
-        dx: f64,
-        dy: f64,
-    ) -> Result<()> {
+    pub async fn notify_pointer_axis(&self, session_id: &str, dx: f64, dy: f64) -> Result<()> {
         let session = self.get_session(session_id).await?;
         session.send_event(InputEvent::PointerAxis { dx, dy }).await
     }
@@ -272,7 +274,9 @@ impl PortalCore {
         state: KeyState,
     ) -> Result<()> {
         let session = self.get_session(session_id).await?;
-        session.send_event(InputEvent::KeyboardKeycode { keycode, state }).await
+        session
+            .send_event(InputEvent::KeyboardKeycode { keycode, state })
+            .await
     }
 
     /// Notifies the compositor of a keyboard keysym event.
@@ -284,7 +288,9 @@ impl PortalCore {
         state: KeyState,
     ) -> Result<()> {
         let session = self.get_session(session_id).await?;
-        session.send_event(InputEvent::KeyboardKeysym { keysym, state }).await
+        session
+            .send_event(InputEvent::KeyboardKeysym { keysym, state })
+            .await
     }
 
     /// Notifies the compositor of touch down event.
@@ -298,7 +304,9 @@ impl PortalCore {
         y: f64,
     ) -> Result<()> {
         let session = self.get_session(session_id).await?;
-        session.send_event(InputEvent::TouchDown { stream, slot, x, y }).await
+        session
+            .send_event(InputEvent::TouchDown { stream, slot, x, y })
+            .await
     }
 
     /// Notifies the compositor of touch motion event.
@@ -312,7 +320,9 @@ impl PortalCore {
         y: f64,
     ) -> Result<()> {
         let session = self.get_session(session_id).await?;
-        session.send_event(InputEvent::TouchMotion { stream, slot, x, y }).await
+        session
+            .send_event(InputEvent::TouchMotion { stream, slot, x, y })
+            .await
     }
 
     /// Notifies the compositor of touch up event.
@@ -518,10 +528,7 @@ mod tests {
     // Input Events
     // ========================================================================
 
-    async fn setup_active_session(
-        core: &PortalCore,
-        session_id: &str,
-    ) {
+    async fn setup_active_session(core: &PortalCore, session_id: &str) {
         core.create_session(session_id.to_string(), "app".to_string())
             .await
             .unwrap();
@@ -550,7 +557,10 @@ mod tests {
 
         let (id, event) = rx.recv().await.unwrap();
         assert_eq!(id.as_str(), "/test/motion");
-        assert!(matches!(event, InputEvent::PointerMotion { dx: 10.0, dy: 5.0 }));
+        assert!(matches!(
+            event,
+            InputEvent::PointerMotion { dx: 10.0, dy: 5.0 }
+        ));
     }
 
     #[tokio::test]
@@ -565,7 +575,11 @@ mod tests {
         let (_, event) = rx.recv().await.unwrap();
         assert!(matches!(
             event,
-            InputEvent::PointerMotionAbsolute { stream: 0, x: 100.0, y: 200.0 }
+            InputEvent::PointerMotionAbsolute {
+                stream: 0,
+                x: 100.0,
+                y: 200.0
+            }
         ));
     }
 
@@ -581,7 +595,10 @@ mod tests {
         let (_, event) = rx.recv().await.unwrap();
         assert!(matches!(
             event,
-            InputEvent::PointerButton { button: 1, state: ButtonState::Pressed }
+            InputEvent::PointerButton {
+                button: 1,
+                state: ButtonState::Pressed
+            }
         ));
     }
 
@@ -610,7 +627,10 @@ mod tests {
         let (_, event) = rx.recv().await.unwrap();
         assert!(matches!(
             event,
-            InputEvent::KeyboardKeycode { keycode: 30, state: KeyState::Pressed }
+            InputEvent::KeyboardKeycode {
+                keycode: 30,
+                state: KeyState::Pressed
+            }
         ));
     }
 
@@ -626,7 +646,10 @@ mod tests {
         let (_, event) = rx.recv().await.unwrap();
         assert!(matches!(
             event,
-            InputEvent::KeyboardKeysym { keysym: 0x61, state: KeyState::Released }
+            InputEvent::KeyboardKeysym {
+                keysym: 0x61,
+                state: KeyState::Released
+            }
         ));
     }
 
@@ -642,7 +665,12 @@ mod tests {
         let (_, event) = rx.recv().await.unwrap();
         assert!(matches!(
             event,
-            InputEvent::TouchDown { stream: 0, slot: 1, x: 50.0, y: 100.0 }
+            InputEvent::TouchDown {
+                stream: 0,
+                slot: 1,
+                x: 50.0,
+                y: 100.0
+            }
         ));
     }
 
@@ -658,7 +686,12 @@ mod tests {
         let (_, event) = rx.recv().await.unwrap();
         assert!(matches!(
             event,
-            InputEvent::TouchMotion { stream: 0, slot: 1, x: 60.0, y: 110.0 }
+            InputEvent::TouchMotion {
+                stream: 0,
+                slot: 1,
+                x: 60.0,
+                y: 110.0
+            }
         ));
     }
 
@@ -740,4 +773,3 @@ mod tests {
         }
     }
 }
-

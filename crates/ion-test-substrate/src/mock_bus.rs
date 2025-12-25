@@ -29,9 +29,7 @@ impl MockBus {
     ///
     /// Returns an error if dbus-daemon cannot be spawned.
     pub async fn spawn() -> anyhow::Result<Self> {
-        let temp_dir = tempfile::Builder::new()
-            .prefix("ion-test-")
-            .tempdir()?;
+        let temp_dir = tempfile::Builder::new().prefix("ion-test-").tempdir()?;
 
         let socket_path = temp_dir.path().join("bus");
         let config = format!(
@@ -129,4 +127,3 @@ mod tests {
         assert!(conn.unique_name().is_some());
     }
 }
-

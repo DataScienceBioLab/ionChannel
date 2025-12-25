@@ -37,7 +37,8 @@ use crate::capture::{
 };
 use ion_traits::capture::{
     CaptureCapabilities as TraitCapabilities, CaptureFrame as TraitFrame,
-    FrameFormat as TraitFormat, FrameMetadata as TraitMetadata, ScreenCapture as TraitScreenCapture,
+    FrameFormat as TraitFormat, FrameMetadata as TraitMetadata,
+    ScreenCapture as TraitScreenCapture,
 };
 use ion_traits::error::{CaptureError as TraitCaptureError, CaptureResult as TraitCaptureResult};
 use ion_traits::Platform;
@@ -94,7 +95,10 @@ impl<T: LocalScreenCapture + 'static> TraitScreenCapture for CaptureAdapter<T> {
             platform_data: None,
         };
 
-        Ok(TraitFrame::with_shared_data(metadata, local_frame.shared_data()))
+        Ok(TraitFrame::with_shared_data(
+            metadata,
+            local_frame.shared_data(),
+        ))
     }
 
     fn capabilities(&self) -> TraitCapabilities {
@@ -132,7 +136,7 @@ fn convert_format(local: crate::capture::FrameFormat) -> TraitFormat {
 /// Convert local capabilities to trait capabilities.
 fn convert_capabilities(local: &LocalCapabilities) -> TraitCapabilities {
     TraitCapabilities {
-        max_width: 7680,  // 8K
+        max_width: 7680, // 8K
         max_height: 4320,
         formats: local.formats.iter().map(|f| convert_format(*f)).collect(),
         hardware_accelerated: local.hardware_encoding,
@@ -150,7 +154,7 @@ pub fn adapt<T: LocalScreenCapture + 'static>(capture: T) -> CaptureAdapter<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::capture::{CpuCapture, CaptureTier};
+    use crate::capture::{CaptureTier, CpuCapture};
 
     #[test]
     fn convert_format_roundtrip() {
@@ -171,7 +175,7 @@ mod tests {
     fn adapter_platform_detection() {
         let capture = CpuCapture::with_defaults(100, 100);
         let adapter = CaptureAdapter::new(capture);
-        
+
         let platform = adapter.platform();
         // Should detect current platform
         #[cfg(target_os = "linux")]
@@ -182,7 +186,7 @@ mod tests {
     fn adapt_helper_function() {
         let capture = CpuCapture::with_defaults(100, 100);
         let adapter = adapt(capture);
-        
+
         let caps = adapter.capabilities();
         assert!(!caps.description.is_empty());
     }
@@ -191,7 +195,7 @@ mod tests {
     async fn adapter_capture_frame() {
         let capture = CpuCapture::with_defaults(100, 100);
         let adapter = adapt(capture);
-        
+
         let frame = adapter.capture_frame().await.unwrap();
         assert_eq!(frame.width(), 100);
         assert_eq!(frame.height(), 100);
@@ -201,7 +205,7 @@ mod tests {
     fn adapter_inner_access() {
         let capture = CpuCapture::with_defaults(100, 100);
         let adapter = CaptureAdapter::new(capture);
-        
+
         let inner = adapter.inner();
         let caps = inner.capabilities();
         assert_eq!(caps.tier, CaptureTier::Cpu);
@@ -211,10 +215,9 @@ mod tests {
     fn adapter_into_inner() {
         let capture = CpuCapture::with_defaults(100, 100);
         let adapter = CaptureAdapter::new(capture);
-        
+
         let recovered = adapter.into_inner();
         let caps = recovered.capabilities();
         assert_eq!(caps.tier, CaptureTier::Cpu);
     }
 }
-

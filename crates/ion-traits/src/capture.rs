@@ -116,7 +116,7 @@ impl FrameFormat {
         match self {
             Self::Bgra8888 | Self::Rgba8888 | Self::Xrgb8888 | Self::Xbgr8888 => 4,
             Self::Rgb888 | Self::Bgr888 => 3,
-            Self::Nv12 => 1,  // Average, actual is 1.5
+            Self::Nv12 => 1, // Average, actual is 1.5
             Self::Yuy2 => 2,
         }
     }
@@ -343,4 +343,3 @@ mod tests {
         assert_eq!(caps.max_fps, 30);
     }
 }
-

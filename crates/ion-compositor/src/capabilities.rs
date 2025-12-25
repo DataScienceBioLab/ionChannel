@@ -169,7 +169,14 @@ impl CapabilityProvider {
         info!("│       ionChannel Capabilities          │");
         info!("├─────────────────────────────────────────┤");
         info!("│ Capture Tier: {:24} │", tier.name());
-        info!("│ Input:        {:24} │", if self.input_available { "Available" } else { "None" });
+        info!(
+            "│ Input:        {:24} │",
+            if self.input_available {
+                "Available"
+            } else {
+                "None"
+            }
+        );
         info!("│ Session Mode: {:24} │", mode.name());
         info!("└─────────────────────────────────────────┘");
     }
@@ -311,15 +318,14 @@ mod tests {
     #[tokio::test]
     async fn multiple_probes_work() {
         let mut provider = CapabilityProvider::new();
-        
+
         provider.probe().await;
         let mode1 = provider.best_mode();
-        
+
         provider.probe().await;
         let mode2 = provider.best_mode();
-        
+
         // Modes should be consistent
         assert_eq!(mode1, mode2);
     }
 }
-

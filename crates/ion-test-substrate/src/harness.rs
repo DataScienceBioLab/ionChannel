@@ -248,9 +248,7 @@ impl TestHarness {
         validator.validate_interface_registered(&self.connection);
 
         // Check device types
-        validator.validate_device_types(
-            DeviceType::KEYBOARD.bits() | DeviceType::POINTER.bits(),
-        );
+        validator.validate_device_types(DeviceType::KEYBOARD.bits() | DeviceType::POINTER.bits());
 
         // Test session lifecycle if we have sessions
         let sessions = self.sessions.read().await;

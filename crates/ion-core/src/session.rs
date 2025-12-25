@@ -385,22 +385,14 @@ mod tests {
     #[tokio::test]
     async fn session_app_id() {
         let (tx, _rx) = mpsc::channel(16);
-        let session = SessionHandle::new(
-            SessionId::new("/test"),
-            "com.example.test".into(),
-            tx,
-        );
+        let session = SessionHandle::new(SessionId::new("/test"), "com.example.test".into(), tx);
         assert_eq!(session.app_id().await, "com.example.test");
     }
 
     #[tokio::test]
     async fn session_uptime() {
         let (tx, _rx) = mpsc::channel(16);
-        let session = SessionHandle::new(
-            SessionId::new("/test"),
-            "app".into(),
-            tx,
-        );
+        let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
         let uptime = session.uptime().await;
         assert!(uptime.as_nanos() > 0);
     }
@@ -409,10 +401,10 @@ mod tests {
     async fn session_select_devices_wrong_state() {
         let (tx, _rx) = mpsc::channel(16);
         let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
-        
+
         // Move to DevicesSelected state
         session.select_devices(DeviceType::KEYBOARD).await.unwrap();
-        
+
         // Try to select devices again (should fail)
         let result = session.select_devices(DeviceType::POINTER).await;
         assert!(result.is_err());
@@ -422,7 +414,7 @@ mod tests {
     async fn session_start_wrong_state() {
         let (tx, _rx) = mpsc::channel(16);
         let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
-        
+
         // Try to start without selecting devices (should fail)
         let result = session.start().await;
         assert!(result.is_err());
@@ -432,9 +424,11 @@ mod tests {
     async fn session_send_event_wrong_state() {
         let (tx, _rx) = mpsc::channel(16);
         let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
-        
+
         // Try to send event before starting (should fail)
-        let result = session.send_event(InputEvent::pointer_motion(1.0, 1.0)).await;
+        let result = session
+            .send_event(InputEvent::pointer_motion(1.0, 1.0))
+            .await;
         assert!(result.is_err());
     }
 
@@ -442,18 +436,20 @@ mod tests {
     async fn session_unauthorized_touch() {
         let (tx, _rx) = mpsc::channel(16);
         let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
-        
+
         // Only authorize pointer
         session.select_devices(DeviceType::POINTER).await.unwrap();
         session.start().await.unwrap();
-        
+
         // Try to send touch event (should fail)
-        let result = session.send_event(InputEvent::TouchDown {
-            stream: 0,
-            slot: 0,
-            x: 10.0,
-            y: 10.0,
-        }).await;
+        let result = session
+            .send_event(InputEvent::TouchDown {
+                stream: 0,
+                slot: 0,
+                x: 10.0,
+                y: 10.0,
+            })
+            .await;
         assert!(result.is_err());
     }
 
@@ -461,15 +457,17 @@ mod tests {
     async fn session_channel_closed() {
         let (tx, rx) = mpsc::channel(16);
         let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
-        
+
         session.select_devices(DeviceType::POINTER).await.unwrap();
         session.start().await.unwrap();
-        
+
         // Drop the receiver to close the channel
         drop(rx);
-        
+
         // Try to send event (should fail)
-        let result = session.send_event(InputEvent::pointer_motion(1.0, 1.0)).await;
+        let result = session
+            .send_event(InputEvent::pointer_motion(1.0, 1.0))
+            .await;
         assert!(result.is_err());
     }
 
@@ -477,17 +475,34 @@ mod tests {
     async fn session_multiple_events() {
         let (tx, mut rx) = mpsc::channel(16);
         let session = SessionHandle::new(SessionId::new("/test"), "app".into(), tx);
-        
-        session.select_devices(DeviceType::all_devices()).await.unwrap();
+
+        session
+            .select_devices(DeviceType::all_devices())
+            .await
+            .unwrap();
         session.start().await.unwrap();
-        
+
         // Send multiple events
-        session.send_event(InputEvent::pointer_motion(1.0, 1.0)).await.unwrap();
-        session.send_event(InputEvent::key(28, crate::event::KeyState::Pressed)).await.unwrap();
-        session.send_event(InputEvent::TouchDown { stream: 0, slot: 0, x: 10.0, y: 10.0 }).await.unwrap();
-        
+        session
+            .send_event(InputEvent::pointer_motion(1.0, 1.0))
+            .await
+            .unwrap();
+        session
+            .send_event(InputEvent::key(28, crate::event::KeyState::Pressed))
+            .await
+            .unwrap();
+        session
+            .send_event(InputEvent::TouchDown {
+                stream: 0,
+                slot: 0,
+                x: 10.0,
+                y: 10.0,
+            })
+            .await
+            .unwrap();
+
         assert_eq!(session.event_count().await, 3);
-        
+
         // Receive all events
         assert!(rx.recv().await.unwrap().is_pointer());
         assert!(rx.recv().await.unwrap().is_keyboard());

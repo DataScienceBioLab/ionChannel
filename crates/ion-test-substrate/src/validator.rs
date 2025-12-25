@@ -294,7 +294,10 @@ mod tests {
 
         let result = v.build();
         assert!(result.is_valid());
-        assert_eq!(result.checks[0].spec_ref, Some("https://example.com/spec".to_string()));
+        assert_eq!(
+            result.checks[0].spec_ref,
+            Some("https://example.com/spec".to_string())
+        );
     }
 
     #[test]
@@ -460,4 +463,3 @@ mod tests {
         assert_eq!(cloned.checks.len(), result.checks.len());
     }
 }
-

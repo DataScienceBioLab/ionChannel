@@ -87,11 +87,11 @@ impl MockCompositor {
         events.push(captured);
         let count = events.len();
         drop(events);
-        
+
         // Notify watchers of new count
         let _ = self.count_tx.send(count);
     }
-    
+
     /// Wait until at least `n` events have been captured.
     ///
     /// Returns immediately if already at or above the count.
@@ -172,9 +172,12 @@ mod tests {
 
         // Send some events
         let session = SessionId::new("/test/session/1");
-        tx.send((session.clone(), InputEvent::PointerMotion { dx: 10.0, dy: 20.0 }))
-            .await
-            .unwrap();
+        tx.send((
+            session.clone(),
+            InputEvent::PointerMotion { dx: 10.0, dy: 20.0 },
+        ))
+        .await
+        .unwrap();
         tx.send((
             session.clone(),
             InputEvent::PointerButton {
@@ -193,13 +196,12 @@ mod tests {
         assert_eq!(events[0].sequence, 1);
         assert_eq!(events[1].sequence, 2);
     }
-    
+
     #[tokio::test]
     async fn test_wait_for_events_immediate() {
         let (compositor, _rx) = MockCompositor::new();
-        
+
         // Should return immediately when already at count
         compositor.wait_for_events(0).await;
     }
 }
-

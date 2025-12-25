@@ -191,7 +191,9 @@ pub trait ScreenCapture: Send + Sync {
     ///
     /// Returns a future that resolves to the captured frame.
     /// The future is boxed to allow dynamic dispatch.
-    fn capture_frame(&self) -> Pin<Box<dyn Future<Output = CaptureResult<CaptureFrame>> + Send + '_>>;
+    fn capture_frame(
+        &self,
+    ) -> Pin<Box<dyn Future<Output = CaptureResult<CaptureFrame>> + Send + '_>>;
 
     /// Starts continuous frame capture.
     ///
@@ -256,7 +258,7 @@ mod tests {
     fn capabilities_dmabuf() {
         let formats = vec![FrameFormat::Bgra8888, FrameFormat::Rgba8888];
         let caps = CaptureCapabilities::dmabuf(formats.clone());
-        
+
         assert_eq!(caps.tier, CaptureTier::Dmabuf);
         assert_eq!(caps.formats, formats);
         assert_eq!(caps.max_fps, 60);
@@ -269,7 +271,7 @@ mod tests {
     fn capabilities_shm() {
         let formats = vec![FrameFormat::Bgra8888];
         let caps = CaptureCapabilities::shm(formats.clone());
-        
+
         assert_eq!(caps.tier, CaptureTier::Shm);
         assert_eq!(caps.formats, formats);
         assert_eq!(caps.max_fps, 60);
@@ -280,7 +282,7 @@ mod tests {
     #[test]
     fn capabilities_cpu() {
         let caps = CaptureCapabilities::cpu();
-        
+
         assert_eq!(caps.tier, CaptureTier::Cpu);
         assert!(!caps.formats.is_empty());
         assert_eq!(caps.max_fps, 30);
@@ -292,7 +294,7 @@ mod tests {
     #[test]
     fn capabilities_none() {
         let caps = CaptureCapabilities::none();
-        
+
         assert_eq!(caps.tier, CaptureTier::None);
         assert!(caps.formats.is_empty());
         assert_eq!(caps.max_fps, 0);
@@ -383,4 +385,3 @@ mod tests {
         assert_send_sync::<CaptureCapabilities>();
     }
 }
-

@@ -52,10 +52,7 @@ fn print_result_text(result: &ValidationResult) {
         let color_start = if check.passed { "\x1b[32m" } else { "\x1b[31m" };
         let color_end = "\x1b[0m";
 
-        println!(
-            "║ {color_start}{status}{color_end} {:<56} ║",
-            check.name
-        );
+        println!("║ {color_start}{status}{color_end} {:<56} ║", check.name);
         println!("║   {:<58} ║", check.message);
         if let Some(ref spec) = check.spec_ref {
             println!("║   Spec: {:<52} ║", spec);
@@ -141,11 +138,11 @@ async fn main() -> anyhow::Result<()> {
                 harness.start_session(&session).await?;
                 harness.close_session(&session).await?;
                 harness.validate().await
-            }
+            },
             _ => {
                 error!("Unknown test: {test_name}");
                 std::process::exit(1);
-            }
+            },
         }
     } else {
         harness.smoke_test().await?
@@ -165,4 +162,3 @@ async fn main() -> anyhow::Result<()> {
         std::process::exit(1)
     }
 }
-

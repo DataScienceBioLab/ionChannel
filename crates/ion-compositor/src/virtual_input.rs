@@ -371,7 +371,7 @@ mod tests {
     #[tokio::test]
     async fn virtual_input_new_custom_buffer() {
         let (mut handler, tx) = VirtualInput::new(10);
-        
+
         // Fill the buffer
         for i in 0..10 {
             tx.send(VirtualInputEvent::new(
@@ -381,7 +381,7 @@ mod tests {
             .await
             .unwrap();
         }
-        
+
         let mut sink = MockVirtualInputSink::new();
         let count = handler.process_pending(&mut sink);
         assert_eq!(count, 10);
@@ -390,7 +390,7 @@ mod tests {
     #[tokio::test]
     async fn virtual_input_try_recv_empty() {
         let (mut handler, _tx) = VirtualInput::with_defaults();
-        
+
         // Should return None when empty
         assert!(handler.try_recv().is_none());
     }
@@ -398,14 +398,14 @@ mod tests {
     #[tokio::test]
     async fn virtual_input_try_recv_with_event() {
         let (mut handler, tx) = VirtualInput::with_defaults();
-        
+
         tx.send(VirtualInputEvent::new(
             SessionId::new("/test"),
             InputEvent::pointer_motion(1.0, 2.0),
         ))
         .await
         .unwrap();
-        
+
         let event = handler.try_recv();
         assert!(event.is_some());
         assert!(event.unwrap().event.is_pointer());
@@ -414,7 +414,7 @@ mod tests {
     #[tokio::test]
     async fn virtual_input_recv() {
         let (mut handler, tx) = VirtualInput::with_defaults();
-        
+
         tokio::spawn(async move {
             tx.send(VirtualInputEvent::new(
                 SessionId::new("/test"),
@@ -423,7 +423,7 @@ mod tests {
             .await
             .unwrap();
         });
-        
+
         let event = handler.recv().await;
         assert!(event.is_some());
     }
@@ -431,20 +431,20 @@ mod tests {
     #[tokio::test]
     async fn virtual_input_time_since_last_event() {
         let (mut handler, tx) = VirtualInput::with_defaults();
-        
+
         // No events processed yet
         assert!(handler.time_since_last_event().is_none());
-        
+
         tx.send(VirtualInputEvent::new(
             SessionId::new("/test"),
             InputEvent::pointer_motion(1.0, 2.0),
         ))
         .await
         .unwrap();
-        
+
         let mut sink = MockVirtualInputSink::new();
         handler.process_pending(&mut sink);
-        
+
         // Now we should have a time
         let time = handler.time_since_last_event();
         assert!(time.is_some());
@@ -454,30 +454,53 @@ mod tests {
     async fn virtual_input_process_all_event_types() {
         let (mut handler, tx) = VirtualInput::with_defaults();
         let mut sink = MockVirtualInputSink::new();
-        
+
         // Send one of each event type
         let events = vec![
             InputEvent::PointerMotion { dx: 1.0, dy: 2.0 },
-            InputEvent::PointerMotionAbsolute { stream: 0, x: 100.0, y: 200.0 },
-            InputEvent::PointerButton { button: 1, state: ButtonState::Pressed },
+            InputEvent::PointerMotionAbsolute {
+                stream: 0,
+                x: 100.0,
+                y: 200.0,
+            },
+            InputEvent::PointerButton {
+                button: 1,
+                state: ButtonState::Pressed,
+            },
             InputEvent::PointerAxis { dx: 0.0, dy: -10.0 },
-            InputEvent::PointerAxisDiscrete { axis: Axis::Vertical, steps: -1 },
-            InputEvent::KeyboardKeycode { keycode: 30, state: KeyState::Pressed },
-            InputEvent::KeyboardKeysym { keysym: 0x61, state: KeyState::Pressed },
-            InputEvent::TouchDown { stream: 0, slot: 0, x: 10.0, y: 20.0 },
-            InputEvent::TouchMotion { stream: 0, slot: 0, x: 15.0, y: 25.0 },
+            InputEvent::PointerAxisDiscrete {
+                axis: Axis::Vertical,
+                steps: -1,
+            },
+            InputEvent::KeyboardKeycode {
+                keycode: 30,
+                state: KeyState::Pressed,
+            },
+            InputEvent::KeyboardKeysym {
+                keysym: 0x61,
+                state: KeyState::Pressed,
+            },
+            InputEvent::TouchDown {
+                stream: 0,
+                slot: 0,
+                x: 10.0,
+                y: 20.0,
+            },
+            InputEvent::TouchMotion {
+                stream: 0,
+                slot: 0,
+                x: 15.0,
+                y: 25.0,
+            },
             InputEvent::TouchUp { slot: 0 },
         ];
-        
+
         for event in events {
-            tx.send(VirtualInputEvent::new(
-                SessionId::new("/test"),
-                event,
-            ))
-            .await
-            .unwrap();
+            tx.send(VirtualInputEvent::new(SessionId::new("/test"), event))
+                .await
+                .unwrap();
         }
-        
+
         let count = handler.process_pending(&mut sink);
         assert_eq!(count, 10);
         assert_eq!(sink.events.len(), 10);
@@ -492,7 +515,7 @@ mod tests {
     #[test]
     fn mock_sink_inject_all_types() {
         let mut sink = MockVirtualInputSink::new();
-        
+
         sink.inject_pointer_motion(1.0, 2.0);
         sink.inject_pointer_motion_absolute(0, 100.0, 200.0);
         sink.inject_pointer_button(1, ButtonState::Pressed);
@@ -503,7 +526,7 @@ mod tests {
         sink.inject_touch_down(0, 0, 10.0, 20.0);
         sink.inject_touch_motion(0, 0, 15.0, 25.0);
         sink.inject_touch_up(0);
-        
+
         assert_eq!(sink.events.len(), 10);
     }
 

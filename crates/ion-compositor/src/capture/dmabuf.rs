@@ -125,7 +125,12 @@ impl DmabufCapture {
             .iter()
             .find(|f| formats.contains(f))
             .copied()
-            .unwrap_or_else(|| formats.first().copied().unwrap_or(config.preferred_formats[0]));
+            .unwrap_or_else(|| {
+                formats
+                    .first()
+                    .copied()
+                    .unwrap_or(config.preferred_formats[0])
+            });
 
         let frame_formats: Vec<FrameFormat> = formats
             .iter()
@@ -163,10 +168,16 @@ impl DmabufCapture {
     /// Creates with default configuration.
     #[must_use]
     pub fn with_defaults(width: u32, height: u32) -> Self {
-        let default_formats = vec![
-            DrmFormat::new(FrameFormat::Bgra8888.fourcc(), DrmFormat::MODIFIER_LINEAR),
-        ];
-        Self::new(width, height, default_formats, DmabufCaptureConfig::default())
+        let default_formats = vec![DrmFormat::new(
+            FrameFormat::Bgra8888.fourcc(),
+            DrmFormat::MODIFIER_LINEAR,
+        )];
+        Self::new(
+            width,
+            height,
+            default_formats,
+            DmabufCaptureConfig::default(),
+        )
     }
 
     /// Performs the actual DMA-BUF capture.
@@ -207,7 +218,9 @@ impl ScreenCapture for DmabufCapture {
         &self.capabilities
     }
 
-    fn capture_frame(&self) -> Pin<Box<dyn Future<Output = CaptureResult<CaptureFrame>> + Send + '_>> {
+    fn capture_frame(
+        &self,
+    ) -> Pin<Box<dyn Future<Output = CaptureResult<CaptureFrame>> + Send + '_>> {
         Box::pin(self.do_capture())
     }
 
@@ -253,10 +266,10 @@ mod tests {
     #[tokio::test]
     async fn dmabuf_capture_multiple_frames() {
         let capture = DmabufCapture::with_defaults(100, 100);
-        
+
         let frame1 = capture.do_capture().await.unwrap();
         let frame2 = capture.do_capture().await.unwrap();
-        
+
         assert_eq!(frame1.metadata.sequence + 1, frame2.metadata.sequence);
     }
 
@@ -280,9 +293,10 @@ mod tests {
     #[test]
     fn dmabuf_custom_config() {
         let config = DmabufCaptureConfig {
-            preferred_formats: vec![
-                DrmFormat::new(FrameFormat::Rgba8888.fourcc(), DrmFormat::MODIFIER_LINEAR),
-            ],
+            preferred_formats: vec![DrmFormat::new(
+                FrameFormat::Rgba8888.fourcc(),
+                DrmFormat::MODIFIER_LINEAR,
+            )],
             target_fps: 30,
         };
         assert_eq!(config.target_fps, 30);
@@ -359,7 +373,7 @@ mod tests {
         let f1 = DrmFormat::new(0x12345678, 0);
         let f2 = DrmFormat::new(0x12345678, 0);
         let f3 = DrmFormat::new(0x12345678, 1);
-        
+
         assert_eq!(f1, f2);
         assert_ne!(f1, f3);
     }
@@ -372,8 +386,7 @@ mod tests {
         ];
         let config = DmabufCaptureConfig::default();
         let capture = DmabufCapture::new(800, 600, formats, config);
-        
+
         assert_eq!(capture.capabilities().tier, CaptureTier::Dmabuf);
     }
 }
-

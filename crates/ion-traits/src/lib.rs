@@ -48,4 +48,3 @@ pub use error::{CaptureError, InputError, ServiceError};
 pub use input::{InputCapabilities, InputInjector, KeyEvent, PointerEvent, TouchEvent};
 pub use platform::Platform;
 pub use service::{RemoteDesktopService, ServiceCapabilities, SessionRequest};
-
