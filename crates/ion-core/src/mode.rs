@@ -101,11 +101,10 @@ impl std::fmt::Display for RemoteDesktopMode {
 impl From<u32> for RemoteDesktopMode {
     fn from(value: u32) -> Self {
         match value {
-            0 => Self::None,
             1 => Self::ViewOnly,
             2 => Self::InputOnly,
             3 => Self::Full,
-            _ => Self::None, // Invalid values default to None
+            _ => Self::None, // 0 and invalid values default to None
         }
     }
 }
