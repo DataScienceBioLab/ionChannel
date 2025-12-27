@@ -12,33 +12,23 @@ repository.workspace = true
 ion-core.workspace = true
 
 # Async
+tokio = { workspace = true, features = ["sync", "rt", "macros"] }
 async-trait = "0.1"
-tokio = { workspace = true, features = ["sync", "rt"] }
-
-# Wayland protocols
-wayland-client = { version = "0.31", optional = true }
-wayland-protocols = { version = "0.31", features = ["client", "unstable"], optional = true }
-wayland-protocols-wlr = { version = "0.2", features = ["client"], optional = true }
-
-# EIS (Emulated Input System) for input injection - future
-# libei = { version = "1.0", optional = true }
 
 # Error handling
 thiserror.workspace = true
-anyhow.workspace = true
+anyhow = "1.0"
 
 # Logging
 tracing.workspace = true
 
-[features]
-default = []
-wayland = ["dep:wayland-client", "dep:wayland-protocols", "dep:wayland-protocols-wlr"]
-# eis = ["dep:libei"]
+# Wayland protocols (all features enabled by default now)
+wayland-client = "0.31"
+wayland-protocols = { version = "0.31", features = ["client", "unstable"] }
+wayland-protocols-wlr = { version = "0.2", features = ["client"] }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["rt", "macros", "time"] }
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tokio = { workspace = true, features = ["full"] }
 
 [lints]
 workspace = true
-

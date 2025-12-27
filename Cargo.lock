@@ -1990,7 +1990,6 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
- "tracing-subscriber",
  "wayland-client",
  "wayland-protocols",
  "wayland-protocols-wlr",

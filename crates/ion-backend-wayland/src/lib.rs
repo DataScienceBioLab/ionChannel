@@ -42,6 +42,7 @@
 mod connection;
 mod input;
 mod capture;
+mod protocols;
 
 pub mod provider;
 
