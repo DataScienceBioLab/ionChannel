@@ -214,6 +214,7 @@ async fn deploy_to_vm(
             ip: ip_addr,
             discovery_method: "manual".to_string(),
             username: user,
+            services: Vec::new(),
         }
     } else if let Some(last_vm) = &config.last_vm {
         println!(

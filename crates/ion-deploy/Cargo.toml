@@ -33,6 +33,7 @@ trust-dns-resolver = "0.23"
 # SSH/Remote execution
 russh = "0.44"
 russh-keys = "0.44"
+shell-escape = "0.1"
 
 # System
 hostname = "0.4"
