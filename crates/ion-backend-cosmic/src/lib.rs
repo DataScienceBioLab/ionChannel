@@ -22,7 +22,7 @@
 //! ## Features
 //!
 //! - **Input Injection**: Keyboard and pointer events via D-Bus
-//! - **Screen Capture**: PipeWire streams (Phase 2)
+//! - **Screen Capture**: `PipeWire` streams (Phase 2)
 //! - **Session Management**: Tracks active remote desktop sessions
 //!
 //! ## Usage
@@ -74,7 +74,7 @@ use crate::dbus::CosmicCompProxy;
 pub struct CosmicBackend {
     /// D-Bus connection to cosmic-comp
     connection: Arc<RwLock<Option<zbus::Connection>>>,
-    /// Proxy to cosmic-comp RemoteDesktop service
+    /// Proxy to cosmic-comp `RemoteDesktop` service
     proxy: Arc<RwLock<Option<CosmicCompProxy>>>,
     /// Whether the backend is connected
     connected: Arc<RwLock<bool>>,
@@ -139,12 +139,12 @@ impl CompositorBackend for CosmicBackend {
 
         // Connect to session bus
         let conn = zbus::Connection::session().await.map_err(|e| {
-            BackendError::ConnectionFailed(format!("D-Bus connection failed: {}", e))
+            BackendError::ConnectionFailed(format!("D-Bus connection failed: {e}"))
         })?;
 
         // Create proxy to cosmic-comp
         let proxy = CosmicCompProxy::new(&conn).await.map_err(|e| {
-            BackendError::ConnectionFailed(format!("Failed to create proxy: {}", e))
+            BackendError::ConnectionFailed(format!("Failed to create proxy: {e}"))
         })?;
 
         // Store connection and proxy
@@ -206,8 +206,7 @@ impl CompositorBackend for CosmicBackend {
         let proxy_guard = self.proxy.blocking_read();
         let dbus_available = proxy_guard
             .as_ref()
-            .map(|p| p.is_available())
-            .unwrap_or(false);
+            .is_some_and(dbus::CosmicCompProxy::is_available);
 
         BackendCapabilities {
             can_inject_keyboard: dbus_available,

@@ -15,6 +15,9 @@ use tokio::sync::RwLock;
 
 use crate::backend::{BackendCapabilities, CompositorBackend, DisplayServerType};
 
+/// Type alias for the complex return type of `create_backend`.
+type CreateBackendFuture<'a> = Pin<Box<dyn Future<Output = Option<Arc<dyn CompositorBackend>>> + Send + 'a>>;
+
 /// A capability that a backend can provide.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Capability {
@@ -45,9 +48,7 @@ pub trait BackendProvider: Send + Sync {
     fn capabilities(&self) -> Vec<Capability>;
 
     /// Create an instance of the backend.
-    fn create_backend<'a>(
-        &'a self,
-    ) -> Pin<Box<dyn Future<Output = Option<Arc<dyn CompositorBackend>>> + Send + 'a>>;
+    fn create_backend(&self) -> CreateBackendFuture<'_>;
 }
 
 /// Registry for backend providers.

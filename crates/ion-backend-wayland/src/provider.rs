@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright © 2024-2025 DataScienceBioLab
 
-//! BackendProvider implementation for generic Wayland.
+//! `BackendProvider` implementation for generic Wayland.
 
 use std::future::Future;
 use std::pin::Pin;
@@ -16,11 +16,11 @@ use crate::WaylandBackend;
 pub struct WaylandProvider;
 
 impl BackendProvider for WaylandProvider {
-    fn id(&self) -> &str {
+    fn id(&self) -> &'static str {
         "wayland"
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Wayland (Generic)"
     }
 

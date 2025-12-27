@@ -7,7 +7,7 @@
 //!
 //! This module provides a complete implementation that is ready to use
 //! once cosmic-comp exposes its D-Bus interface. Currently, cosmic-comp
-//! does not provide a RemoteDesktop D-Bus service, so calls are logged
+//! does not provide a `RemoteDesktop` D-Bus service, so calls are logged
 //! but not executed.
 //!
 //! ## Architecture

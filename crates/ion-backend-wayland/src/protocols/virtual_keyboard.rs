@@ -3,7 +3,7 @@
 
 //! Virtual keyboard protocol implementation.
 //!
-//! Implements zwp_virtual_keyboard_v1 for keyboard input injection.
+//! Implements `zwp_virtual_keyboard_v1` for keyboard input injection.
 //!
 //! Note: This protocol is part of wayland-protocols but may not be available
 //! in all versions. For now, this is a placeholder structure showing how
@@ -17,7 +17,7 @@ use ion_core::event::KeyState;
 /// Virtual keyboard manager state (placeholder).
 ///
 /// This will be properly implemented once we have access to the
-/// zwp_virtual_keyboard_v1 protocol bindings.
+/// `zwp_virtual_keyboard_v1` protocol bindings.
 #[derive(Debug)]
 pub struct VirtualKeyboardManager {
     // Will contain actual Wayland protocol objects

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright © 2024-2025 DataScienceBioLab
 
-//! BackendProvider implementation for COSMIC.
+//! `BackendProvider` implementation for COSMIC.
 
 use std::future::Future;
 use std::pin::Pin;
@@ -16,11 +16,11 @@ use crate::CosmicBackend;
 pub struct CosmicProvider;
 
 impl BackendProvider for CosmicProvider {
-    fn id(&self) -> &str {
+    fn id(&self) -> &'static str {
         "cosmic"
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "COSMIC (Wayland)"
     }
 

@@ -3,7 +3,7 @@
 
 //! Virtual pointer protocol implementation (placeholder).
 //!
-//! This module will implement zwlr_virtual_pointer_v1 when Wayland protocol
+//! This module will implement `zwlr_virtual_pointer_v1` when Wayland protocol
 //! bindings are properly configured.
 
 use anyhow::Result;

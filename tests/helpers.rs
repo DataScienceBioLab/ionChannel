@@ -71,7 +71,7 @@ pub async fn get_rustdesk_id(backend: &LibvirtBackend, vm_id: &str) -> Result<St
 pub async fn deploy_ionchannel(backend: &LibvirtBackend, vm_id: &str) -> Result<()> {
     // Build ionChannel locally
     let build_result = std::process::Command::new("cargo")
-        .args(&["build", "--release", "--workspace"])
+        .args(["build", "--release", "--workspace"])
         .current_dir("../")
         .output()
         .context("Failed to build ionChannel")?;
@@ -88,7 +88,7 @@ pub async fn deploy_ionchannel(backend: &LibvirtBackend, vm_id: &str) -> Result<
             .copy_to_node(
                 vm_id,
                 binary,
-                &format!("/home/iontest/{}", binary.split('/').last().unwrap()),
+                &format!("/home/iontest/{}", binary.split('/').next_back().unwrap()),
             )
             .await?;
     }

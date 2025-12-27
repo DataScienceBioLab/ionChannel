@@ -22,7 +22,7 @@
 //! // - "discover_capabilities": List available validation types
 //! ```
 
-use crate::{ValidationEvent, ValidationOrchestrator, ValidationPlan};
+use crate::ValidationOrchestrator;
 use serde::{Deserialize, Serialize};
 
 /// MCP-compatible validation server

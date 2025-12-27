@@ -264,7 +264,7 @@ impl Default for VmBackendRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::providers::vm::{VmInfo, VmProvisioner, VmSpec, VmStatus, ProvisionedVm};
+    use crate::providers::vm::VmProvisioner;
 
     struct MockProvider {
         id: String,

@@ -287,7 +287,7 @@ impl ConsentProvider for CliConsentProvider {
         let session_id = session_id.clone();
         let app_id = app_id.to_string();
         Box::pin(async move {
-            println!("ℹ️  Active session: {} (app: {})", session_id, app_id);
+            println!("ℹ️  Active session: {session_id} (app: {app_id})");
         })
     }
 
@@ -299,7 +299,7 @@ impl ConsentProvider for CliConsentProvider {
         let session_id = session_id.clone();
         let reason = reason.to_string();
         Box::pin(async move {
-            println!("✓ Session {} ended: {}", session_id, reason);
+            println!("✓ Session {session_id} ended: {reason}");
         })
     }
 }

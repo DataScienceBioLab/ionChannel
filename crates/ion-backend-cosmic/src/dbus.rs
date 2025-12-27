@@ -5,13 +5,13 @@
 //!
 //! ## Current State
 //!
-//! cosmic-comp does not yet expose a RemoteDesktop D-Bus interface.
+//! cosmic-comp does not yet expose a `RemoteDesktop` D-Bus interface.
 //! This module provides the structure and API that cosmic-comp will
 //! need to implement.
 //!
 //! ## When cosmic-comp Implements D-Bus Interface
 //!
-//! Replace the manual proxy with zbus::proxy macro:
+//! Replace the manual proxy with `zbus::proxy` macro:
 //!
 //! ```ignore
 //! #[zbus::proxy(
@@ -31,21 +31,21 @@
 use tracing::{debug, info, instrument};
 use zbus::Connection;
 
-/// D-Bus service name for cosmic-comp RemoteDesktop service.
+/// D-Bus service name for cosmic-comp `RemoteDesktop` service.
 ///
 /// **Note**: This service does not yet exist in cosmic-comp.
 /// cosmic-comp needs to implement and expose this interface.
 pub const COSMIC_COMP_SERVICE: &str = "com.system76.cosmic.Comp";
 
-/// D-Bus object path for RemoteDesktop interface.
+/// D-Bus object path for `RemoteDesktop` interface.
 #[allow(dead_code)] // Will be used when cosmic-comp implements interface
 pub const COSMIC_COMP_PATH: &str = "/com/system76/cosmic/RemoteDesktop";
 
-/// Proxy to cosmic-comp's RemoteDesktop D-Bus interface.
+/// Proxy to cosmic-comp's `RemoteDesktop` D-Bus interface.
 ///
 /// This is a manual proxy implementation until cosmic-comp exposes
 /// the actual D-Bus interface. Once cosmic-comp implements the interface,
-/// this should be replaced with a zbus::proxy generated proxy.
+/// this should be replaced with a `zbus::proxy` generated proxy.
 #[derive(Debug, Clone)]
 pub struct CosmicCompProxy {
     connection: Connection,
@@ -150,5 +150,5 @@ pub mod interface_spec {
     //! Documentation of the interface cosmic-comp should implement.
     //!
     //! Once cosmic-comp implements this, the `CosmicCompProxy` can be
-    //! replaced with a proper zbus::proxy generated proxy.
+    //! replaced with a proper `zbus::proxy` generated proxy.
 }

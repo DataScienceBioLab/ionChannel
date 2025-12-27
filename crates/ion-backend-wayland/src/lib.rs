@@ -168,7 +168,7 @@ impl CompositorBackend for WaylandBackend {
 
         // Connect to Wayland
         let conn = WaylandConnection::new().await.map_err(|e| {
-            BackendError::ConnectionFailed(format!("Wayland connection failed: {}", e))
+            BackendError::ConnectionFailed(format!("Wayland connection failed: {e}"))
         })?;
 
         info!(
