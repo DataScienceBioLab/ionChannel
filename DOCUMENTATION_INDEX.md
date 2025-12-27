@@ -10,23 +10,28 @@ Complete guide to all ionChannel documentation.
 
 1. **[QUICK_START.md](QUICK_START.md)** ⭐ - **Fastest way to get started!**
 2. **[README.md](README.md)** - Project overview
-3. **[DEMO_GUIDE.md](DEMO_GUIDE.md)** - Complete demo guide
-4. **[STATUS.md](STATUS.md)** - Current implementation status
+3. **[STATUS.md](STATUS.md)** - Current implementation status
+4. **[PROJECT_COMPLETION_SUMMARY.md](PROJECT_COMPLETION_SUMMARY.md)** - Complete project summary
 
 ---
 
 ## 📊 Current Status
 
 ### Quick Status
-- **[STATUS.md](STATUS.md)** - Current metrics (430 tests, zero debt)
+- **[STATUS.md](STATUS.md)** - Living document with current metrics
+- **[PROJECT_COMPLETION_SUMMARY.md](PROJECT_COMPLETION_SUMMARY.md)** - Final comprehensive summary
 - **[QUICK_START.md](QUICK_START.md)** - What's ready to demo
 
-### Detailed Reports (Archived)
-See [docs/reports/](docs/reports/) for session reports:
-- `READY_FOR_DEMO.md` - Initial demo readiness
-- `FINAL_STATUS_COMPLETE.md` - Comprehensive status
-- `E2E_COMPLETE.md` - E2E implementation summary
-- `DEMONSTRATION_READY.md` - Final readiness confirmation
+### Testing Documentation
+See [docs/testing/](docs/testing/) for test-specific documentation:
+- `MVP_TEST_RESULTS.md` - Complete MVP test results
+- `TESTING_PLAN_POPOS_WAYLAND.md` - Comprehensive test plan
+
+### Session Reports (Archived)
+See [docs/reports/](docs/reports/) for historical session reports:
+- Previous evolution sessions
+- Audit reports
+- Implementation summaries
 
 ---
 
