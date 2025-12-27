@@ -5,13 +5,7 @@
 //! 2. Install RustDesk
 //! 3. Get connection ID
 
-use ion_validation::providers::desktop::{RemoteDesktop, SshAuth, Target};
-use ion_validation::providers::vm::{VmProvisioner, VmSpec};
 
-#[cfg(feature = "libvirt")]
-use ion_validation::impls::{
-    libvirt_provisioner::LibvirtProvisioner, rustdesk_provider::RustDeskProvider,
-};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

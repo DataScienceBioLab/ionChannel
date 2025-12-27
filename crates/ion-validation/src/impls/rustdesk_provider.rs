@@ -215,7 +215,6 @@ impl RustDeskProvider {
             .await?;
 
         Ok(stdout
-            .trim()
             .split_whitespace()
             .last()
             .unwrap_or("unknown")

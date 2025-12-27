@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 
 use crate::{
-    errors::{Result, ValidationError},
+    errors::Result,
     providers::{
         backend_discovery::{ProviderHealth, ResourceStatus, VmBackendProvider, VmCapability, VmType},
         vm::VmProvisioner,

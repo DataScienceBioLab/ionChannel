@@ -14,7 +14,7 @@ fn main() -> anyhow::Result<()> {
     println!("📋 Checking for template VM...\n");
 
     let template_exists = Command::new("virsh")
-        .args(&["list", "--all"])
+        .args(["list", "--all"])
         .output()?
         .stdout;
 
@@ -39,7 +39,7 @@ fn main() -> anyhow::Result<()> {
             println!("This will take a few minutes. Creating VM...");
 
             let install_cmd = Command::new("virt-install")
-                .args(&[
+                .args([
                     "--name",
                     "rustdesk-test",
                     "--ram",
@@ -77,7 +77,7 @@ fn main() -> anyhow::Result<()> {
 
         // Clone the template
         let clone_result = Command::new("virt-clone")
-            .args(&[
+            .args([
                 "--original",
                 "ionChannel-template",
                 "--name",
@@ -94,7 +94,7 @@ fn main() -> anyhow::Result<()> {
                     // Start the VM
                     println!("\nStarting VM...");
                     Command::new("virsh")
-                        .args(&["start", "rustdesk-test"])
+                        .args(["start", "rustdesk-test"])
                         .output()?;
 
                     println!("⏳ Waiting for VM to boot (15s)...");
@@ -102,7 +102,7 @@ fn main() -> anyhow::Result<()> {
 
                     // Get IP
                     let ip_output = Command::new("virsh")
-                        .args(&["domifaddr", "rustdesk-test", "--source", "lease"])
+                        .args(["domifaddr", "rustdesk-test", "--source", "lease"])
                         .output()?;
 
                     let ip_str = String::from_utf8_lossy(&ip_output.stdout);

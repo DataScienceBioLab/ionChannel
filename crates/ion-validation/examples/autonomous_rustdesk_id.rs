@@ -2,10 +2,8 @@
 //!
 //! This tool connects to the VM and retrieves the RustDesk ID automatically
 
-use std::io::{BufRead, BufReader, Write};
-use std::process::{Command, Stdio};
-use std::thread;
-use std::time::Duration;
+use std::io::BufRead;
+use std::process::Command;
 
 fn main() -> anyhow::Result<()> {
     println!("\n🤖 AUTONOMOUS RUSTDESK ID RETRIEVAL");
@@ -50,7 +48,7 @@ fn main() -> anyhow::Result<()> {
     println!("Step 2: Running installation commands...\n");
 
     let result = Command::new("sshpass")
-        .args(&[
+        .args([
             "-p",
             password,
             "ssh",
