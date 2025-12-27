@@ -178,20 +178,26 @@ impl ValidationEvent {
             Self::Started { .. } => "Validation started".to_string(),
             Self::ProvisioningStarted { vm_name, .. } => {
                 format!("Provisioning VM: {}", vm_name)
-            }
+            },
             Self::VmProvisioned { vm_id, ip, .. } => {
                 format!("VM provisioned: {} at {}", vm_id, ip)
-            }
+            },
             Self::SshConnected { host, port, .. } => {
                 format!("SSH connected: {}:{}", host, port)
-            }
+            },
             Self::InstallingPackage { package, .. } => format!("Installing: {}", package),
             Self::PackageInstalled { package, .. } => format!("Installed: {}", package),
             Self::DeployingService { service, .. } => format!("Deploying: {}", service),
             Self::ServiceStarted { service, .. } => format!("Started: {}", service),
-            Self::HealthCheck { service, healthy, .. } => {
-                format!("Health check {}: {}", service, if *healthy { "✓" } else { "✗" })
-            }
+            Self::HealthCheck {
+                service, healthy, ..
+            } => {
+                format!(
+                    "Health check {}: {}",
+                    service,
+                    if *healthy { "✓" } else { "✗" }
+                )
+            },
             Self::Progress { message, .. } => message.clone(),
             Self::PhaseComplete { phase_name, .. } => format!("Phase complete: {}", phase_name),
             Self::Warning { message, .. } => format!("Warning: {}", message),
@@ -206,6 +212,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(feature = "mcp")]
     fn test_event_serialization() {
         let event = ValidationEvent::VmProvisioned {
             timestamp: Utc::now(),
@@ -233,4 +240,3 @@ mod tests {
         assert!(desc.contains("rustdesk"));
     }
 }
-

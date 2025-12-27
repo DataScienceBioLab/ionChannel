@@ -8,7 +8,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use ion_core::backend::CompositorBackend;
-use ion_core::discovery::{BackendProvider, Capability, capabilities_to_list};
+use ion_core::discovery::{capabilities_to_list, BackendProvider, Capability};
 
 use crate::CosmicBackend;
 
@@ -34,7 +34,9 @@ impl BackendProvider for CosmicProvider {
         capabilities_to_list(&caps)
     }
 
-    fn create_backend<'a>(&'a self) -> Pin<Box<dyn Future<Output = Option<Arc<dyn CompositorBackend>>> + Send + 'a>> {
+    fn create_backend<'a>(
+        &'a self,
+    ) -> Pin<Box<dyn Future<Output = Option<Arc<dyn CompositorBackend>>> + Send + 'a>> {
         Box::pin(async {
             if !CosmicBackend::is_cosmic_session() {
                 return None;
@@ -49,4 +51,3 @@ impl BackendProvider for CosmicProvider {
         })
     }
 }
-

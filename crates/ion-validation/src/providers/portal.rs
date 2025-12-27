@@ -124,6 +124,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "mcp")]
     fn test_health_serialization() {
         let health = Health {
             healthy: true,
@@ -135,4 +136,3 @@ mod tests {
         assert!(json.contains("true"));
     }
 }
-

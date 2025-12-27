@@ -12,6 +12,9 @@ repository.workspace = true
 async-trait = "0.1"
 tokio = { workspace = true, features = ["sync"] }
 
+# Bit manipulation for efficient flags
+bitflags = "2.6"
+
 # Error handling
 thiserror.workspace = true
 

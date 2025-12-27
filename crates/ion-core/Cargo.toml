@@ -11,6 +11,9 @@ repository.workspace = true
 # Async trait for backend abstraction
 async-trait = "0.1"
 
+# Async utilities for parallel operations
+futures = "0.3"
+
 # Error handling
 thiserror.workspace = true
 

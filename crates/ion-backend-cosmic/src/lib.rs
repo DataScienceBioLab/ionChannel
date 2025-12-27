@@ -138,14 +138,14 @@ impl CompositorBackend for CosmicBackend {
         }
 
         // Connect to session bus
-        let conn = zbus::Connection::session()
-            .await
-            .map_err(|e| BackendError::ConnectionFailed(format!("D-Bus connection failed: {}", e)))?;
+        let conn = zbus::Connection::session().await.map_err(|e| {
+            BackendError::ConnectionFailed(format!("D-Bus connection failed: {}", e))
+        })?;
 
         // Create proxy to cosmic-comp
-        let proxy = CosmicCompProxy::new(&conn)
-            .await
-            .map_err(|e| BackendError::ConnectionFailed(format!("Failed to create proxy: {}", e)))?;
+        let proxy = CosmicCompProxy::new(&conn).await.map_err(|e| {
+            BackendError::ConnectionFailed(format!("Failed to create proxy: {}", e))
+        })?;
 
         // Store connection and proxy
         *self.connection.write().await = Some(conn);
@@ -196,7 +196,8 @@ impl CompositorBackend for CosmicBackend {
         //
         // For now, return error indicating feature not available
         Err(BackendError::CaptureFailed(
-            "Screen capture not yet available in cosmic-comp (PipeWire integration pending)".to_string(),
+            "Screen capture not yet available in cosmic-comp (PipeWire integration pending)"
+                .to_string(),
         ))
     }
 
@@ -232,15 +233,15 @@ mod tests {
     fn test_cosmic_backend_capabilities() {
         let backend = CosmicBackend::new();
         let caps = backend.capabilities();
-        
+
         assert_eq!(caps.backend_name, "COSMIC (Wayland)");
         assert_eq!(caps.display_server_type, DisplayServerType::Wayland);
-        
+
         // Capabilities depend on cosmic-comp D-Bus availability
         // In test environment, D-Bus service won't be available
         assert!(!caps.can_inject_keyboard); // False until cosmic-comp implements D-Bus
-        assert!(!caps.can_inject_pointer);  // False until cosmic-comp implements D-Bus
-        assert!(!caps.can_capture_screen);  // False until PipeWire is integrated
+        assert!(!caps.can_inject_pointer); // False until cosmic-comp implements D-Bus
+        assert!(!caps.can_capture_screen); // False until PipeWire is integrated
     }
 
     #[tokio::test]
@@ -248,7 +249,7 @@ mod tests {
         // This test will fail if run in actual COSMIC session
         // In CI/non-COSMIC environments, it should pass
         let backend = CosmicBackend::new();
-        
+
         // Just test that the method works, not the result
         // (result depends on environment)
         let _ = backend.is_available().await;
@@ -258,7 +259,7 @@ mod tests {
     async fn test_connect_without_compositor() {
         // This test documents expected behavior when compositor isn't available
         let mut backend = CosmicBackend::new();
-        
+
         // Skip if actually in COSMIC (would succeed)
         if !CosmicBackend::is_cosmic_session() {
             let result = backend.connect().await;
@@ -267,4 +268,3 @@ mod tests {
         }
     }
 }
-

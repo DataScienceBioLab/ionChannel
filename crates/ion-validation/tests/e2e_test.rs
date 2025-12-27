@@ -18,7 +18,7 @@ async fn test_full_ai_first_validation() {
 
     // Step 1: Set up capability registry with all providers
     let mut registry = CapabilityRegistry::new();
-    
+
     // Register VM provisioner
     let libvirt = LibvirtProvisioner::new()
         .await
@@ -74,11 +74,11 @@ async fn test_full_ai_first_validation() {
             ValidationEvent::Started { plan_id, .. } => {
                 println!("▶  Validation started");
                 println!("   Plan ID: {}", plan_id);
-            }
+            },
             ValidationEvent::ProvisioningStarted { vm_name, .. } => {
                 println!("\n🔧 Phase 1: VM Provisioning");
                 println!("   Provisioning: {}", vm_name);
-            }
+            },
             ValidationEvent::VmProvisioned {
                 vm_id: id,
                 vm_name,
@@ -93,11 +93,11 @@ async fn test_full_ai_first_validation() {
                 println!("      Name: {}", vm_name);
                 println!("      IP: {}", ip);
                 println!("      Duration: {:?}", duration);
-            }
+            },
             ValidationEvent::InstallingPackage { package, .. } => {
                 println!("\n📦 Phase 2: Package Installation");
                 println!("   Installing: {}", package);
-            }
+            },
             ValidationEvent::PackageInstalled {
                 package,
                 version,
@@ -107,7 +107,7 @@ async fn test_full_ai_first_validation() {
                 println!("   ✅ Package installed!");
                 println!("      Package: {} v{}", package, version);
                 println!("      Duration: {:?}", duration);
-            }
+            },
             ValidationEvent::DeployingService {
                 service,
                 components,
@@ -116,7 +116,7 @@ async fn test_full_ai_first_validation() {
                 println!("\n🚀 Phase 3: Service Deployment");
                 println!("   Deploying: {}", service);
                 println!("   Components: {:?}", components);
-            }
+            },
             ValidationEvent::ServiceStarted {
                 service, endpoint, ..
             } => {
@@ -125,7 +125,7 @@ async fn test_full_ai_first_validation() {
                 if let Some(ep) = endpoint {
                     println!("      Endpoint: {}", ep);
                 }
-            }
+            },
             ValidationEvent::PhaseComplete {
                 phase,
                 phase_name,
@@ -135,7 +135,7 @@ async fn test_full_ai_first_validation() {
                 phase_count += 1;
                 println!("\n   ✅ Phase {} complete: {}", phase, phase_name);
                 println!("      Duration: {:?}\n", duration);
-            }
+            },
             ValidationEvent::Complete {
                 rustdesk_id,
                 total_duration,
@@ -159,7 +159,7 @@ async fn test_full_ai_first_validation() {
                 println!("   ID: {}", vm_id);
                 println!("   IP: {}", vm_ip);
                 println!("\n═══════════════════════════════════════════════════════════════");
-            }
+            },
             ValidationEvent::Error {
                 error_type,
                 message,
@@ -173,13 +173,13 @@ async fn test_full_ai_first_validation() {
                 if let Some(s) = suggestion {
                     println!("   💡 Suggestion: {}", s);
                 }
-            }
+            },
             ValidationEvent::Warning { message, .. } => {
                 println!("⚠️  Warning: {}", message);
-            }
+            },
             _ => {
                 println!("   {}", event.description());
-            }
+            },
         }
     }
 
@@ -194,7 +194,9 @@ async fn test_ai_agent_observability() {
 
     // This test demonstrates how an AI agent would observe validation
     let mut registry = CapabilityRegistry::new();
-    let libvirt = LibvirtProvisioner::new().await.expect("Failed to create provisioner");
+    let libvirt = LibvirtProvisioner::new()
+        .await
+        .expect("Failed to create provisioner");
     registry.register_vm_provisioner(Arc::new(libvirt));
 
     let plan = ValidationPlan::builder()
@@ -207,16 +209,16 @@ async fn test_ai_agent_observability() {
 
     // AI agent collects structured data
     let mut events_seen = Vec::new();
-    
+
     while let Some(event) = execution.next().await {
         // AI agent processes each event
         events_seen.push(event.clone());
-        
+
         // AI can make decisions based on events
         if event.is_error() {
             println!("AI: Error detected, could trigger retry logic");
         }
-        
+
         if event.is_complete() {
             println!("AI: Validation complete, extracting results");
         }
@@ -225,4 +227,3 @@ async fn test_ai_agent_observability() {
     println!("AI observed {} events", events_seen.len());
     assert!(!events_seen.is_empty(), "AI should observe events");
 }
-

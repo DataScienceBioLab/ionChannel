@@ -37,7 +37,9 @@ pub mod mode;
 pub mod session;
 
 // Re-exports for convenience
-pub use backend::{BackendCapabilities, BackendError, BackendResult, CompositorBackend, DisplayServerType};
+pub use backend::{
+    BackendCapabilities, BackendError, BackendResult, CompositorBackend, DisplayServerType,
+};
 pub use device::DeviceType;
 pub use error::{Error, Result};
 pub use event::{Axis, ButtonState, InputEvent, KeyState};

@@ -2017,6 +2017,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bitflags 2.10.0",
+ "futures",
  "serde",
  "thiserror 1.0.69",
  "tokio",
@@ -2108,6 +2109,7 @@ name = "ion-traits"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bitflags 2.10.0",
  "thiserror 1.0.69",
  "tokio",
 ]

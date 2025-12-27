@@ -26,9 +26,9 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 use zbus::Connection;
 
-use ion_core::backend::{BackendFactory, CompositorBackend};
 use ion_backend_cosmic::CosmicBackend;
 use ion_backend_wayland::WaylandBackend;
+use ion_core::backend::{BackendFactory, CompositorBackend};
 use ion_portal::session_manager::{SessionManager, SessionManagerConfig};
 use ion_portal::RemoteDesktopPortal;
 
@@ -116,4 +116,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-

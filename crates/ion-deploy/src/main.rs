@@ -1,5 +1,5 @@
 //! ionChannel Deployment Tool
-//! 
+//!
 //! Pure Rust tool for VM discovery, deployment, and testing.
 
 use anyhow::Result;
@@ -7,10 +7,10 @@ use clap::{Parser, Subcommand};
 use console::style;
 use tracing::Level;
 
+mod config;
+mod deploy;
 mod discovery;
 mod ssh;
-mod deploy;
-mod config;
 
 use discovery::VmDiscovery;
 
@@ -105,15 +105,25 @@ async fn main() -> Result<()> {
     let config_path = cli.config.as_deref();
     let mut config = config::Config::load(config_path)?;
 
-    println!("{}", style("════════════════════════════════════════════════════════════════").cyan());
-    println!("  {} {}", style("🤖").cyan(), style("ionChannel Deployment Tool").bold().cyan());
-    println!("{}", style("════════════════════════════════════════════════════════════════").cyan());
+    println!(
+        "{}",
+        style("════════════════════════════════════════════════════════════════").cyan()
+    );
+    println!(
+        "  {} {}",
+        style("🤖").cyan(),
+        style("ionChannel Deployment Tool").bold().cyan()
+    );
+    println!(
+        "{}",
+        style("════════════════════════════════════════════════════════════════").cyan()
+    );
     println!();
 
     match cli.command {
         Commands::Discover { force } => {
             discover_vms(&mut config, force).await?;
-        }
+        },
 
         Commands::Deploy {
             ip,
@@ -122,11 +132,11 @@ async fn main() -> Result<()> {
             skip_portal,
         } => {
             deploy_to_vm(&mut config, ip, user, skip_build, skip_portal).await?;
-        }
+        },
 
         Commands::Test { ip, user } => {
             test_vm_connection(&config, &ip, user.as_deref()).await?;
-        }
+        },
 
         Commands::Config { reset } => {
             if reset {
@@ -135,28 +145,31 @@ async fn main() -> Result<()> {
             } else {
                 println!("{:#?}", config);
             }
-        }
+        },
 
         Commands::Info { ip } => {
             get_vm_info(&config, ip.as_deref()).await?;
-        }
+        },
     }
 
     Ok(())
 }
 
-async fn discover_vms(config: &mut config::Config, force: bool) -> Result<()> {
+async fn discover_vms(config: &mut config::Config, _force: bool) -> Result<()> {
     println!("{} Discovering VMs...", style("[1/3]").blue());
     println!();
 
-    let discovery = VmDiscovery::new();
+    let mut discovery = VmDiscovery::new();
     let vms = discovery.discover_all().await?;
 
     if vms.is_empty() {
         println!("{} No VMs auto-discovered", style("⚠️").yellow());
         println!();
         println!("Try manual entry with:");
-        println!("  {} --ip <IP> --user <USER>", style("ion-deploy deploy").cyan());
+        println!(
+            "  {} --ip <IP> --user <USER>",
+            style("ion-deploy deploy").cyan()
+        );
         return Ok(());
     }
 
@@ -174,7 +187,7 @@ async fn discover_vms(config: &mut config::Config, force: bool) -> Result<()> {
     }
 
     println!();
-    
+
     // Save discovered VMs to config
     config.discovered_vms = vms;
     config.save()?;
@@ -203,7 +216,11 @@ async fn deploy_to_vm(
             username: user,
         }
     } else if let Some(last_vm) = &config.last_vm {
-        println!("Using last VM: {} ({})", style(&last_vm.name).bold(), style(&last_vm.ip).dim());
+        println!(
+            "Using last VM: {} ({})",
+            style(&last_vm.name).bold(),
+            style(&last_vm.ip).dim()
+        );
         last_vm.clone()
     } else if !config.discovered_vms.is_empty() {
         // Interactive selection would go here
@@ -234,27 +251,32 @@ async fn deploy_to_vm(
     config.save()?;
 
     println!();
-    println!("{}", style("════════════════════════════════════════════════════════════════").green());
-    println!(" {} {}", style("🎉").bold(), style("DEPLOYMENT COMPLETE!").bold().green());
-    println!("{}", style("════════════════════════════════════════════════════════════════").green());
+    println!(
+        "{}",
+        style("════════════════════════════════════════════════════════════════").green()
+    );
+    println!(
+        " {} {}",
+        style("🎉").bold(),
+        style("DEPLOYMENT COMPLETE!").bold().green()
+    );
+    println!(
+        "{}",
+        style("════════════════════════════════════════════════════════════════").green()
+    );
 
     Ok(())
 }
 
-async fn test_vm_connection(
-    _config: &config::Config,
-    ip: &str,
-    user: Option<&str>,
-) -> Result<()> {
-    let username = user.unwrap_or_else(|| {
-        std::env::var("USER")
-            .or_else(|_| std::env::var("USERNAME"))
-            .unwrap_or_else(|_| "ubuntu".to_string())
-    });
+async fn test_vm_connection(_config: &config::Config, ip: &str, user: Option<&str>) -> Result<()> {
+    let default_user = std::env::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .unwrap_or_else(|_| "ubuntu".to_string());
+    let username = user.unwrap_or(&default_user);
 
     println!("Testing connection to {}@{}...", username, ip);
 
-    let can_connect = ssh::test_connection(ip, &username).await?;
+    let can_connect = ssh::test_connection(ip, username).await?;
 
     if can_connect {
         println!("{} Connection successful", style("✓").green());
@@ -279,4 +301,3 @@ async fn get_vm_info(_config: &config::Config, ip: Option<&str>) -> Result<()> {
 
     Ok(())
 }
-

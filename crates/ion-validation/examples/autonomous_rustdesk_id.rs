@@ -1,11 +1,11 @@
 //! Autonomous RustDesk ID retrieval
-//! 
+//!
 //! This tool connects to the VM and retrieves the RustDesk ID automatically
 
+use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
-use std::io::{Write, BufRead, BufReader};
-use std::time::Duration;
 use std::thread;
+use std::time::Duration;
 
 fn main() -> anyhow::Result<()> {
     println!("\n🤖 AUTONOMOUS RUSTDESK ID RETRIEVAL");
@@ -23,9 +23,15 @@ fn main() -> anyhow::Result<()> {
 
     // Commands to run in the VM
     // Build commands with proper lifetime
-    let dpkg_cmd = format!("echo '{}' | sudo -S dpkg -i rustdesk.deb 2>&1 | tail -3", password);
-    let apt_cmd = format!("echo '{}' | sudo -S apt-get install -f -y 2>&1 | tail -3", password);
-    
+    let dpkg_cmd = format!(
+        "echo '{}' | sudo -S dpkg -i rustdesk.deb 2>&1 | tail -3",
+        password
+    );
+    let apt_cmd = format!(
+        "echo '{}' | sudo -S apt-get install -f -y 2>&1 | tail -3",
+        password
+    );
+
     let commands = vec![
         "cd /tmp",
         "if [ ! -f rustdesk.deb ]; then wget -q --show-progress https://github.com/rustdesk/rustdesk/releases/download/1.2.3/rustdesk-1.2.3-x86_64.deb -O rustdesk.deb; fi",
@@ -42,15 +48,20 @@ fn main() -> anyhow::Result<()> {
 
     // Use sshpass with the new credentials
     println!("Step 2: Running installation commands...\n");
-    
+
     let result = Command::new("sshpass")
         .args(&[
-            "-p", password,
+            "-p",
+            password,
             "ssh",
-            "-o", "StrictHostKeyChecking=no",
-            "-o", "PreferredAuthentications=password",
-            "-o", "PubkeyAuthentication=no",
-            "-o", "NumberOfPasswordPrompts=1",
+            "-o",
+            "StrictHostKeyChecking=no",
+            "-o",
+            "PreferredAuthentications=password",
+            "-o",
+            "PubkeyAuthentication=no",
+            "-o",
+            "NumberOfPasswordPrompts=1",
             &format!("{}@{}", username, ip),
             &full_command,
         ])
@@ -60,14 +71,17 @@ fn main() -> anyhow::Result<()> {
         Ok(output) => {
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
-            
+
             println!("Output:\n{}", stdout);
             if !stderr.is_empty() && !stderr.contains("Pseudo-terminal") {
                 eprintln!("Errors:\n{}", stderr);
             }
 
             // Try to extract ID
-            if let Some(line) = stdout.lines().find(|l| l.len() == 9 && l.chars().all(|c| c.is_numeric())) {
+            if let Some(line) = stdout
+                .lines()
+                .find(|l| l.len() == 9 && l.chars().all(|c| c.is_numeric()))
+            {
                 println!("\n🎉 SUCCESS!");
                 println!("════════════════════════════════════════════════════════════════");
                 println!("\n🎯 RustDesk ID: {}\n", line);
@@ -81,10 +95,10 @@ fn main() -> anyhow::Result<()> {
                 println!("════════════════════════════════════════════════════════════════\n");
                 return Ok(());
             }
-        }
+        },
         Err(e) => {
             eprintln!("⚠️  SSH command failed: {}", e);
-        }
+        },
     }
 
     println!("\n📊 SUMMARY:");
@@ -103,4 +117,3 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-

@@ -20,9 +20,7 @@ pub struct VirtualPointerManager {
 impl VirtualPointerManager {
     /// Create a new virtual pointer manager.
     pub fn new() -> Self {
-        Self {
-            available: false,
-        }
+        Self { available: false }
     }
 
     /// Check if virtual pointer protocol is available.
@@ -37,14 +35,24 @@ impl VirtualPointerManager {
     }
 
     /// Inject pointer motion (absolute) - placeholder.
-    pub fn motion_absolute(&self, x: f64, y: f64, _width: u32, _height: u32, _time: u32) -> Result<()> {
+    pub fn motion_absolute(
+        &self,
+        x: f64,
+        y: f64,
+        _width: u32,
+        _height: u32,
+        _time: u32,
+    ) -> Result<()> {
         debug!("Would inject absolute pointer motion: x={}, y={}", x, y);
         Ok(())
     }
 
     /// Inject pointer button - placeholder.
     pub fn button(&self, button: u32, state: ButtonState, _time: u32) -> Result<()> {
-        debug!("Would inject pointer button: button={}, state={:?}", button, state);
+        debug!(
+            "Would inject pointer button: button={}, state={:?}",
+            button, state
+        );
         Ok(())
     }
 

@@ -61,7 +61,9 @@ impl ValidationOrchestrator {
             }
         });
 
-        Ok(Box::pin(tokio_stream::wrappers::UnboundedReceiverStream::new(rx)))
+        Ok(Box::pin(
+            tokio_stream::wrappers::UnboundedReceiverStream::new(rx),
+        ))
     }
 }
 
@@ -125,7 +127,7 @@ async fn execute_validation(
         let install_start = Instant::now();
 
         let remote_desktop = registry.discover_remote_desktop().await?;
-        
+
         // TODO: Create Target from provisioned_vm
         // For now, this is a placeholder
         let installation_duration = install_start.elapsed();
@@ -201,12 +203,12 @@ impl ValidationPlanBuilder {
                 let mut builder = self;
                 builder.install_remote_desktop = true;
                 builder
-            }
+            },
             "wayland-portal" => {
                 let mut builder = self;
                 builder.deploy_portal = true;
                 builder
-            }
+            },
             _ => self,
         }
     }
@@ -237,4 +239,3 @@ mod tests {
         assert!(plan.install_remote_desktop);
     }
 }
-

@@ -59,24 +59,26 @@ async fn phase2_test_rustdesk_installation() -> Result<()> {
 
     let backend = LibvirtBackend::new()?;
     let vm = get_test_vm(&backend).await?;
-    
+
     println!("Target VM: {} ({})", vm.name, vm.id);
 
     // Check if RustDesk is already installed
     println!("\nChecking for existing RustDesk installation...");
-    let check_result = backend.exec_command(
-        &vm.id,
-        vec!["which".to_string(), "rustdesk".to_string()],
-    ).await?;
+    let check_result = backend
+        .exec_command(&vm.id, vec!["which".to_string(), "rustdesk".to_string()])
+        .await?;
 
     if check_result.success() {
-        println!("✓ RustDesk is already installed: {}", check_result.stdout.trim());
-        
+        println!(
+            "✓ RustDesk is already installed: {}",
+            check_result.stdout.trim()
+        );
+
         // Get RustDesk ID
         println!("\nGetting RustDesk ID...");
         let rustdesk_id = get_rustdesk_id(&backend, &vm.id).await?;
         println!("✓ RustDesk ID: {}", rustdesk_id);
-        
+
         println!("\n✅ Phase 2 PASSED: RustDesk is ready!\n");
         return Ok(());
     }
@@ -88,10 +90,9 @@ async fn phase2_test_rustdesk_installation() -> Result<()> {
 
     // Verify installation
     println!("\nVerifying installation...");
-    let verify_result = backend.exec_command(
-        &vm.id,
-        vec!["which".to_string(), "rustdesk".to_string()],
-    ).await?;
+    let verify_result = backend
+        .exec_command(&vm.id, vec!["which".to_string(), "rustdesk".to_string()])
+        .await?;
     assert!(verify_result.success(), "RustDesk should be installed");
     println!("✓ RustDesk binary found: {}", verify_result.stdout.trim());
 
@@ -115,7 +116,7 @@ async fn phase3_test_ionchannel_deployment() -> Result<()> {
 
     let backend = LibvirtBackend::new()?;
     let vm = get_test_vm(&backend).await?;
-    
+
     println!("Target VM: {} ({})", vm.name, vm.id);
 
     // Deploy ionChannel
@@ -148,7 +149,7 @@ async fn phase4_test_e2e_remote_desktop() -> Result<()> {
 
     let backend = LibvirtBackend::new()?;
     let vm = get_test_vm(&backend).await?;
-    
+
     println!("Target VM: {} ({})", vm.name, vm.id);
 
     // Verify all components are running
@@ -165,7 +166,7 @@ async fn phase4_test_e2e_remote_desktop() -> Result<()> {
     println!("\n3. Testing input injection...");
     test_keyboard_input(&backend, &vm.id).await?;
     println!("✓ Keyboard input works");
-    
+
     test_mouse_input(&backend, &vm.id).await?;
     println!("✓ Mouse input works");
 

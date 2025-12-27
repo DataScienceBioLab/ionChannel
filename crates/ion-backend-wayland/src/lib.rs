@@ -39,9 +39,9 @@
 #![warn(clippy::all, clippy::pedantic, missing_docs)]
 #![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
 
+mod capture;
 mod connection;
 mod input;
-mod capture;
 mod protocols;
 
 pub mod provider;
@@ -148,11 +148,11 @@ impl CompositorBackend for WaylandBackend {
             Ok(_) => {
                 debug!("Wayland compositor available");
                 true
-            }
+            },
             Err(e) => {
                 debug!("Wayland compositor not available: {}", e);
                 false
-            }
+            },
         }
     }
 
@@ -167,11 +167,14 @@ impl CompositorBackend for WaylandBackend {
         }
 
         // Connect to Wayland
-        let conn = WaylandConnection::new()
-            .await
-            .map_err(|e| BackendError::ConnectionFailed(format!("Wayland connection failed: {}", e)))?;
+        let conn = WaylandConnection::new().await.map_err(|e| {
+            BackendError::ConnectionFailed(format!("Wayland connection failed: {}", e))
+        })?;
 
-        info!("✓ Connected to Wayland compositor: {}", conn.compositor_name());
+        info!(
+            "✓ Connected to Wayland compositor: {}",
+            conn.compositor_name()
+        );
 
         // Store connection
         *self.connection.write().await = Some(conn);
@@ -259,9 +262,8 @@ mod tests {
     fn test_default_capabilities() {
         let backend = WaylandBackend::new();
         let caps = backend.capabilities();
-        
+
         assert_eq!(caps.display_server_type, DisplayServerType::Wayland);
         assert!(caps.backend_name.contains("Wayland"));
     }
 }
-

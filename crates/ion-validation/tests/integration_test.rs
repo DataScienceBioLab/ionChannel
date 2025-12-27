@@ -18,9 +18,11 @@ async fn test_ai_first_validation_api() {
 
     // Step 1: Set up capability registry
     let mut registry = CapabilityRegistry::new();
-    
+
     // Register Libvirt provisioner
-    let libvirt = LibvirtProvisioner::new().await.expect("Failed to create Libvirt provisioner");
+    let libvirt = LibvirtProvisioner::new()
+        .await
+        .expect("Failed to create Libvirt provisioner");
     registry.register_vm_provisioner(Arc::new(libvirt));
 
     // Step 2: Create validation plan (declarative!)
@@ -48,35 +50,59 @@ async fn test_ai_first_validation_api() {
         match &event {
             ValidationEvent::Started { plan_id, .. } => {
                 println!("▶  Validation started: {}", plan_id);
-            }
+            },
             ValidationEvent::ProvisioningStarted { vm_name, .. } => {
                 println!("⚙  Provisioning VM: {}", vm_name);
-            }
-            ValidationEvent::VmProvisioned { vm_id, vm_name, ip, duration, .. } => {
+            },
+            ValidationEvent::VmProvisioned {
+                vm_id,
+                vm_name,
+                ip,
+                duration,
+                ..
+            } => {
                 println!("✅ VM provisioned successfully!");
                 println!("   ID: {}", vm_id);
                 println!("   Name: {}", vm_name);
                 println!("   IP: {}", ip);
                 println!("   Duration: {:?}", duration);
-            }
-            ValidationEvent::PhaseComplete { phase, phase_name, duration, .. } => {
-                println!("✅ Phase {} complete: {} ({:?})", phase, phase_name, duration);
-            }
-            ValidationEvent::Complete { rustdesk_id, total_duration, phases_completed, .. } => {
+            },
+            ValidationEvent::PhaseComplete {
+                phase,
+                phase_name,
+                duration,
+                ..
+            } => {
+                println!(
+                    "✅ Phase {} complete: {} ({:?})",
+                    phase, phase_name, duration
+                );
+            },
+            ValidationEvent::Complete {
+                rustdesk_id,
+                total_duration,
+                phases_completed,
+                ..
+            } => {
                 println!("\n🎉 VALIDATION COMPLETE!");
                 println!("   RustDesk ID: {}", rustdesk_id);
                 println!("   Total duration: {:?}", total_duration);
                 println!("   Phases completed: {}", phases_completed);
-            }
-            ValidationEvent::Error { error_type, message, suggestion, .. } => {
+            },
+            ValidationEvent::Error {
+                error_type,
+                message,
+                suggestion,
+                ..
+            } => {
                 println!("❌ Error: {} - {}", error_type, message);
                 if let Some(s) = suggestion {
                     println!("   Suggestion: {}", s);
                 }
-            }
+            },
             _ => {
                 println!("📋 {}", event.description());
-            }
+            },
         }
     }
 
@@ -89,9 +115,11 @@ async fn test_capability_discovery() {
     println!("\n🔍 Testing Capability Discovery\n");
 
     let mut registry = CapabilityRegistry::new();
-    
+
     // Register VM provisioner
-    let libvirt = LibvirtProvisioner::new().await.expect("Failed to create Libvirt provisioner");
+    let libvirt = LibvirtProvisioner::new()
+        .await
+        .expect("Failed to create Libvirt provisioner");
     registry.register_vm_provisioner(Arc::new(libvirt));
 
     // Discover VM provisioner
@@ -109,4 +137,3 @@ async fn test_capability_discovery() {
         println!("  - {} ({:?})", vm.name, vm.status);
     }
 }
-

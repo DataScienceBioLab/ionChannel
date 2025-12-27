@@ -154,3 +154,7 @@ path = "examples/smithay_integration.rs"
 [[bench]]
 name = "performance"
 harness = false
+
+[[bench]]
+name = "core_operations"
+harness = false

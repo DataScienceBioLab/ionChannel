@@ -8,6 +8,7 @@
 
 use std::collections::HashMap;
 use std::process::{Child, Command, Stdio};
+use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::mpsc;

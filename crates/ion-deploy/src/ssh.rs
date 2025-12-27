@@ -12,7 +12,7 @@ pub async fn test_connection(ip: &str, username: &str) -> Result<bool> {
     // TODO: Implement actual SSH connection test using russh
     // For now, simple TCP connection test
     let addr: SocketAddr = format!("{}:22", ip).parse()?;
-    
+
     match tokio::time::timeout(
         Duration::from_secs(3),
         tokio::net::TcpStream::connect(&addr),
@@ -22,15 +22,15 @@ pub async fn test_connection(ip: &str, username: &str) -> Result<bool> {
         Ok(Ok(_stream)) => {
             debug!("TCP connection successful");
             Ok(true)
-        }
+        },
         Ok(Err(e)) => {
             debug!("TCP connection failed: {}", e);
             Ok(false)
-        }
+        },
         Err(_) => {
             debug!("Connection timeout");
             Ok(false)
-        }
+        },
     }
 }
 
@@ -50,4 +50,3 @@ pub async fn transfer_files(
     // TODO: Implement file transfer
     anyhow::bail!("File transfer not yet implemented")
 }
-

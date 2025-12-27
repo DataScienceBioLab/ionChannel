@@ -42,4 +42,3 @@ pub async fn start_capture(
         session_id: session.clone(),
     })
 }
-

@@ -119,10 +119,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "mcp")]
     fn test_vm_status_serialization() {
         let status = VmStatus::Running;
         let json = serde_json::to_string(&status).unwrap();
         assert_eq!(json, "\"running\"");
     }
 }
-

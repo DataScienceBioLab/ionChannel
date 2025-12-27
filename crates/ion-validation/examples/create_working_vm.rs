@@ -12,14 +12,14 @@ fn main() -> anyhow::Result<()> {
 
     // Check if ionChannel-template exists
     println!("📋 Checking for template VM...\n");
-    
+
     let template_exists = Command::new("virsh")
         .args(&["list", "--all"])
         .output()?
         .stdout;
-    
+
     let template_str = String::from_utf8_lossy(&template_exists);
-    
+
     if !template_str.contains("ionChannel-template") {
         println!("⚠️  No template VM found.");
         println!("\n💡 TO CREATE A WORKING TEST VM:");
@@ -28,33 +28,44 @@ fn main() -> anyhow::Result<()> {
         println!("\n1. Download a cloud image with cloud-init support");
         println!("2. Configure it with a known working password");
         println!("3. Clone it for testing\n");
-        
+
         // Check for existing Pop!_OS ISO
         let iso_path = "/var/lib/libvirt/images/pop-os_24.04_amd64_nvidia_22.iso";
         if std::path::Path::new(iso_path).exists() {
             println!("✓ Found Pop!_OS ISO");
             println!("\nCreating template VM with working SSH...\n");
-            
+
             // Use virt-install to create a minimal VM
             println!("This will take a few minutes. Creating VM...");
-            
+
             let install_cmd = Command::new("virt-install")
                 .args(&[
-                    "--name", "rustdesk-test",
-                    "--ram", "4096",
-                    "--vcpus", "2",
-                    "--disk", "size=20",
-                    "--os-variant", "ubuntu22.04",
-                    "--network", "network=default",
-                    "--graphics", "none",
-                    "--console", "pty,target_type=serial",
-                    "--location", iso_path,
-                    "--initrd-inject", "/tmp/preseed.cfg",
-                    "--extra-args", "console=ttyS0 auto=true priority=critical",
+                    "--name",
+                    "rustdesk-test",
+                    "--ram",
+                    "4096",
+                    "--vcpus",
+                    "2",
+                    "--disk",
+                    "size=20",
+                    "--os-variant",
+                    "ubuntu22.04",
+                    "--network",
+                    "network=default",
+                    "--graphics",
+                    "none",
+                    "--console",
+                    "pty,target_type=serial",
+                    "--location",
+                    iso_path,
+                    "--initrd-inject",
+                    "/tmp/preseed.cfg",
+                    "--extra-args",
+                    "console=ttyS0 auto=true priority=critical",
                     "--noautoconsole",
                 ])
                 .output();
-            
+
             match install_cmd {
                 Ok(_) => println!("✓ VM creation started!"),
                 Err(e) => println!("⚠️  Could not create VM automatically: {}", e),
@@ -63,38 +74,48 @@ fn main() -> anyhow::Result<()> {
     } else {
         println!("✓ Template VM found!");
         println!("\nCloning for testing...\n");
-        
+
         // Clone the template
         let clone_result = Command::new("virt-clone")
             .args(&[
-                "--original", "ionChannel-template",
-                "--name", "rustdesk-test",
+                "--original",
+                "ionChannel-template",
+                "--name",
+                "rustdesk-test",
                 "--auto-clone",
             ])
             .output();
-        
+
         match clone_result {
             Ok(output) => {
                 if output.status.success() {
                     println!("✓ VM cloned successfully!");
-                    
+
                     // Start the VM
                     println!("\nStarting VM...");
-                    Command::new("virsh").args(&["start", "rustdesk-test"]).output()?;
-                    
+                    Command::new("virsh")
+                        .args(&["start", "rustdesk-test"])
+                        .output()?;
+
                     println!("⏳ Waiting for VM to boot (15s)...");
                     thread::sleep(Duration::from_secs(15));
-                    
+
                     // Get IP
                     let ip_output = Command::new("virsh")
                         .args(&["domifaddr", "rustdesk-test", "--source", "lease"])
                         .output()?;
-                    
+
                     let ip_str = String::from_utf8_lossy(&ip_output.stdout);
                     if let Some(line) = ip_str.lines().find(|l| l.contains("ipv4")) {
-                        if let Some(ip) = line.split_whitespace().nth(3).and_then(|a| a.split('/').next()) {
+                        if let Some(ip) = line
+                            .split_whitespace()
+                            .nth(3)
+                            .and_then(|a| a.split('/').next())
+                        {
                             println!("\n✅ VM READY!");
-                            println!("════════════════════════════════════════════════════════════════");
+                            println!(
+                                "════════════════════════════════════════════════════════════════"
+                            );
                             println!("\n📡 VM IP: {}", ip);
                             println!("\n🔧 Test SSH:");
                             println!("   $ ssh iontest@{}", ip);
@@ -105,14 +126,14 @@ fn main() -> anyhow::Result<()> {
                             return Ok(());
                         }
                     }
-                    
+
                     println!("\n⚠️  VM started but no IP yet. Wait a moment and check:");
                     println!("   $ virsh domifaddr rustdesk-test");
                 } else {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     println!("⚠️  Clone failed: {}", stderr);
                 }
-            }
+            },
             Err(e) => println!("⚠️  Could not clone VM: {}", e),
         }
     }
@@ -131,4 +152,3 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-

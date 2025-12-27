@@ -1,5 +1,5 @@
 //! VM Discovery Module
-//! 
+//!
 //! Discovers VMs using multiple methods:
 //! - mDNS/Avahi
 //! - Network scanning
@@ -86,16 +86,17 @@ impl VmDiscovery {
 
         let content = std::fs::read_to_string(&ssh_config)?;
 
-        let mut current_host = None;
-        let mut current_hostname = None;
-        let mut current_user = None;
+        let mut current_host: Option<String> = None;
+        let mut current_hostname: Option<String> = None;
+        let mut current_user: Option<String> = None;
 
         for line in content.lines() {
             let line = line.trim();
 
             if line.starts_with("Host ") {
                 // Save previous host if it matches VM pattern
-                if let (Some(host), Some(hostname)) = (current_host.take(), current_hostname.take()) {
+                if let (Some(host), Some(hostname)) = (current_host.take(), current_hostname.take())
+                {
                     if is_vm_name(&host) {
                         vms.push(VmInfo {
                             name: host,
@@ -172,4 +173,3 @@ mod tests {
         assert!(!is_vm_name("production-server"));
     }
 }
-

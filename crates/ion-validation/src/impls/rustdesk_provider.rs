@@ -23,12 +23,16 @@ impl RustDeskProvider {
                 return Err(ValidationError::SshConnectionFailed {
                     host: target.host.clone(),
                     port: target.port,
-                    reason: "Key auth not supported yet by benchScale SSH, use password".to_string(),
+                    reason: "Key auth not supported yet by benchScale SSH, use password"
+                        .to_string(),
                 });
-            }
+            },
         };
 
-        info!("Connecting to {}@{}:{}", target.username, target.host, target.port);
+        info!(
+            "Connecting to {}@{}:{}",
+            target.username, target.host, target.port
+        );
 
         SshClient::connect(&target.host, target.port, &target.username, &password)
             .await
@@ -77,8 +81,9 @@ impl RemoteDesktop for RustDeskProvider {
         // Download and install RustDesk
         info!("Downloading RustDesk...");
         let download_cmd = "wget -q https://github.com/rustdesk/rustdesk/releases/download/1.2.3/rustdesk-1.2.3-x86_64.deb -O /tmp/rustdesk.deb";
-        
-        let (download_exit, _stdout, download_stderr) = self.exec_ssh(&mut ssh, download_cmd).await?;
+
+        let (download_exit, _stdout, download_stderr) =
+            self.exec_ssh(&mut ssh, download_cmd).await?;
 
         if download_exit != 0 {
             return Err(ValidationError::PackageInstallationFailed {
@@ -90,7 +95,7 @@ impl RemoteDesktop for RustDeskProvider {
         // Install the package
         info!("Installing RustDesk package...");
         let install_cmd = "sudo dpkg -i /tmp/rustdesk.deb || sudo apt-get install -f -y";
-        
+
         let (install_exit, _stdout, _stderr) = self.exec_ssh(&mut ssh, install_cmd).await?;
 
         if install_exit != 0 {
@@ -99,9 +104,12 @@ impl RemoteDesktop for RustDeskProvider {
 
         // Verify installation
         let (verify_exit, verify_stdout, _) = self.exec_ssh(&mut ssh, "which rustdesk").await?;
-        
+
         if verify_exit == 0 {
-            let version = self.get_version(&mut ssh).await.unwrap_or_else(|_| "1.2.3".to_string());
+            let version = self
+                .get_version(&mut ssh)
+                .await
+                .unwrap_or_else(|_| "1.2.3".to_string());
             return Ok(Installation {
                 version,
                 path: verify_stdout.trim().to_string(),
@@ -121,8 +129,9 @@ impl RemoteDesktop for RustDeskProvider {
         info!("Retrieving RustDesk ID");
 
         // Try to get ID from config file
-        let get_id_cmd = "cat ~/.config/rustdesk/RustDesk.toml 2>/dev/null | grep '^id' | cut -d'\"' -f2";
-        
+        let get_id_cmd =
+            "cat ~/.config/rustdesk/RustDesk.toml 2>/dev/null | grep '^id' | cut -d'\"' -f2";
+
         let (exit_code, stdout, _stderr) = self.exec_ssh(&mut ssh, get_id_cmd).await?;
 
         if exit_code == 0 && !stdout.trim().is_empty() {
@@ -133,11 +142,11 @@ impl RemoteDesktop for RustDeskProvider {
 
         // Fallback: try to get ID from service
         let service_id_cmd = "rustdesk --get-id 2>/dev/null || echo 'UNAVAILABLE'";
-        
+
         let (_, service_stdout, _) = self.exec_ssh(&mut ssh, service_id_cmd).await?;
 
         let id = service_stdout.trim().to_string();
-        
+
         if id == "UNAVAILABLE" || id.is_empty() {
             return Err(ValidationError::RemoteDesktopIdNotFound {
                 reason: "RustDesk ID not available, service may not be running".to_string(),
@@ -152,7 +161,7 @@ impl RemoteDesktop for RustDeskProvider {
 
         // Check if RustDesk process is running
         let check_cmd = "pgrep rustdesk >/dev/null 2>&1";
-        
+
         let (exit_code, _, _) = self.exec_ssh(&mut ssh, check_cmd).await?;
 
         Ok(exit_code == 0)
@@ -160,7 +169,7 @@ impl RemoteDesktop for RustDeskProvider {
 
     async fn get_connection_info(&self, target: &Target) -> Result<ConnectionInfo> {
         let id = self.get_id(target).await?;
-        
+
         Ok(ConnectionInfo {
             id,
             endpoint: None,
@@ -181,7 +190,9 @@ impl RemoteDesktop for RustDeskProvider {
 impl RustDeskProvider {
     /// Get RustDesk version
     async fn get_version(&self, ssh: &mut SshClient) -> Result<String> {
-        let (_, stdout, _) = self.exec_ssh(ssh, "rustdesk --version 2>&1 | head -1").await?;
+        let (_, stdout, _) = self
+            .exec_ssh(ssh, "rustdesk --version 2>&1 | head -1")
+            .await?;
 
         Ok(stdout
             .trim()
@@ -203,4 +214,3 @@ mod tests {
         assert!(provider.is_available().await);
     }
 }
-

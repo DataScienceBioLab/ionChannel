@@ -81,4 +81,3 @@ impl Config {
         Ok(home.join(".config/ionChannel/deploy.toml"))
     }
 }
-

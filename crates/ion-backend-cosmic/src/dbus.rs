@@ -59,10 +59,10 @@ impl CosmicCompProxy {
     #[instrument(skip(connection))]
     pub async fn new(connection: &Connection) -> zbus::Result<Self> {
         debug!("Creating proxy to cosmic-comp");
-        
+
         // Check if cosmic-comp D-Bus service exists
         let service_available = Self::check_service_available(connection).await;
-        
+
         if service_available {
             info!("✓ cosmic-comp D-Bus service available");
         } else {
@@ -79,13 +79,15 @@ impl CosmicCompProxy {
     async fn check_service_available(connection: &Connection) -> bool {
         // Query D-Bus to see if the service exists
         let dbus_proxy = zbus::fdo::DBusProxy::new(connection).await;
-        
+
         if let Ok(proxy) = dbus_proxy {
             if let Ok(names) = proxy.list_names().await {
-                return names.iter().any(|name| name.as_str() == COSMIC_COMP_SERVICE);
+                return names
+                    .iter()
+                    .any(|name| name.as_str() == COSMIC_COMP_SERVICE);
             }
         }
-        
+
         false
     }
 

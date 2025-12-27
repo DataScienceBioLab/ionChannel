@@ -13,9 +13,10 @@ pub struct LibvirtProvisioner {
 impl LibvirtProvisioner {
     /// Create a new Libvirt provisioner
     pub async fn new() -> Result<Self> {
-        let backend = LibvirtBackend::new()
-            .map_err(|e| ValidationError::generic(format!("Failed to initialize Libvirt: {}", e)))?;
-        
+        let backend = LibvirtBackend::new().map_err(|e| {
+            ValidationError::generic(format!("Failed to initialize Libvirt: {}", e))
+        })?;
+
         Ok(Self { backend })
     }
 }
@@ -25,12 +26,11 @@ impl VmProvisioner for LibvirtProvisioner {
     async fn provision(&self, spec: VmSpec) -> Result<ProvisionedVm> {
         // For now, we'll discover existing VMs
         // Full provisioning would involve creating new VMs
-        let nodes = self.backend
-            .list_nodes("default")
-            .await
-            .map_err(|e| ValidationError::VmProvisioningFailed {
+        let nodes = self.backend.list_nodes("default").await.map_err(|e| {
+            ValidationError::VmProvisioningFailed {
                 reason: format!("Failed to list VMs: {}", e),
-            })?;
+            }
+        })?;
 
         // Find a running VM
         for node in nodes {
@@ -51,12 +51,13 @@ impl VmProvisioner for LibvirtProvisioner {
     }
 
     async fn get_status(&self, vm_id: &str) -> Result<VmStatus> {
-        let node = self.backend
-            .get_node(vm_id)
-            .await
-            .map_err(|_e| ValidationError::VmNotFound {
-                vm_id: vm_id.to_string(),
-            })?;
+        let node =
+            self.backend
+                .get_node(vm_id)
+                .await
+                .map_err(|_e| ValidationError::VmNotFound {
+                    vm_id: vm_id.to_string(),
+                })?;
 
         Ok(match node.status {
             NodeStatus::Running => VmStatus::Running,
@@ -66,13 +67,14 @@ impl VmProvisioner for LibvirtProvisioner {
     }
 
     async fn get_ip(&self, vm_id: &str) -> Result<String> {
-        let node = self.backend
-            .get_node(vm_id)
-            .await
-            .map_err(|_e| ValidationError::VmNotFound {
-                vm_id: vm_id.to_string(),
-            })?;
-        
+        let node =
+            self.backend
+                .get_node(vm_id)
+                .await
+                .map_err(|_e| ValidationError::VmNotFound {
+                    vm_id: vm_id.to_string(),
+                })?;
+
         Ok(node.ip_address)
     }
 
@@ -84,7 +86,8 @@ impl VmProvisioner for LibvirtProvisioner {
     }
 
     async fn list(&self) -> Result<Vec<VmInfo>> {
-        let nodes = self.backend
+        let nodes = self
+            .backend
             .list_nodes("default")
             .await
             .map_err(|e| ValidationError::generic(format!("Failed to list VMs: {}", e)))?;
@@ -121,9 +124,8 @@ mod tests {
     async fn test_libvirt_provisioner() {
         let provisioner = LibvirtProvisioner::new().await.unwrap();
         assert!(provisioner.is_available().await);
-        
+
         let vms = provisioner.list().await.unwrap();
         println!("Found {} VMs", vms.len());
     }
 }
-

@@ -13,45 +13,36 @@ use crate::connection::WaylandConnection;
 /// Inject an input event into the Wayland compositor.
 ///
 /// Uses virtual pointer/keyboard protocols where available.
-pub async fn inject_event(
-    conn: &WaylandConnection,
-    event: InputEvent,
-) -> BackendResult<()> {
+pub async fn inject_event(conn: &WaylandConnection, event: InputEvent) -> BackendResult<()> {
     match event {
         InputEvent::KeyboardKeycode { keycode, state } => {
             inject_keyboard_keycode(conn, keycode, state).await
-        }
+        },
         InputEvent::KeyboardKeysym { keysym, state } => {
             inject_keyboard_keysym(conn, keysym, state).await
-        }
-        InputEvent::PointerMotion { dx, dy } => {
-            inject_pointer_motion(conn, dx, dy).await
-        }
+        },
+        InputEvent::PointerMotion { dx, dy } => inject_pointer_motion(conn, dx, dy).await,
         InputEvent::PointerMotionAbsolute { stream, x, y } => {
             inject_pointer_motion_absolute(conn, stream, x, y).await
-        }
+        },
         InputEvent::PointerButton { button, state } => {
             inject_pointer_button(conn, button, state).await
-        }
-        InputEvent::PointerAxis { dx, dy } => {
-            inject_pointer_axis(conn, dx, dy).await
-        }
+        },
+        InputEvent::PointerAxis { dx, dy } => inject_pointer_axis(conn, dx, dy).await,
         InputEvent::PointerAxisDiscrete { axis, steps } => {
             inject_pointer_axis_discrete(conn, axis, steps).await
-        }
+        },
         InputEvent::TouchDown { stream, slot, x, y } => {
             inject_touch_down(conn, stream, slot, x, y).await
-        }
+        },
         InputEvent::TouchMotion { stream, slot, x, y } => {
             inject_touch_motion(conn, stream, slot, x, y).await
-        }
-        InputEvent::TouchUp { slot } => {
-            inject_touch_up(conn, slot).await
-        }
+        },
+        InputEvent::TouchUp { slot } => inject_touch_up(conn, slot).await,
         _ => {
             warn!("Unsupported input event type");
             Ok(())
-        }
+        },
     }
 }
 
@@ -66,7 +57,10 @@ async fn inject_keyboard_keycode(
         ));
     }
 
-    debug!("Injecting keyboard keycode: {}, state: {:?}", keycode, state);
+    debug!(
+        "Injecting keyboard keycode: {}, state: {:?}",
+        keycode, state
+    );
 
     // In a full implementation, this would use:
     // zwp_virtual_keyboard_v1.key(time, keycode, state)
@@ -102,11 +96,7 @@ async fn inject_keyboard_keysym(
     Ok(())
 }
 
-async fn inject_pointer_motion(
-    conn: &WaylandConnection,
-    dx: f64,
-    dy: f64,
-) -> BackendResult<()> {
+async fn inject_pointer_motion(conn: &WaylandConnection, dx: f64, dy: f64) -> BackendResult<()> {
     if !conn.has_virtual_pointer() {
         return Err(BackendError::InputInjectionFailed(
             "Virtual pointer protocol not available".to_string(),
@@ -163,11 +153,7 @@ async fn inject_pointer_button(
     Ok(())
 }
 
-async fn inject_pointer_axis(
-    conn: &WaylandConnection,
-    dx: f64,
-    dy: f64,
-) -> BackendResult<()> {
+async fn inject_pointer_axis(conn: &WaylandConnection, dx: f64, dy: f64) -> BackendResult<()> {
     if !conn.has_virtual_pointer() {
         return Err(BackendError::InputInjectionFailed(
             "Virtual pointer protocol not available".to_string(),
@@ -193,7 +179,10 @@ async fn inject_pointer_axis_discrete(
         ));
     }
 
-    debug!("Injecting discrete pointer axis: {:?}, steps: {}", axis, steps);
+    debug!(
+        "Injecting discrete pointer axis: {:?}, steps: {}",
+        axis, steps
+    );
 
     // Full implementation: zwlr_virtual_pointer_v1.axis_discrete(time, axis, steps)
     info!(
@@ -239,14 +228,10 @@ async fn inject_touch_motion(
     Ok(())
 }
 
-async fn inject_touch_up(
-    _conn: &WaylandConnection,
-    slot: u32,
-) -> BackendResult<()> {
+async fn inject_touch_up(_conn: &WaylandConnection, slot: u32) -> BackendResult<()> {
     debug!("Injecting touch up: slot={}", slot);
 
     info!("Touch events not yet implemented for generic Wayland");
 
     Ok(())
 }
-

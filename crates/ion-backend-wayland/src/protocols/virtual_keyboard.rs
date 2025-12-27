@@ -27,9 +27,7 @@ pub struct VirtualKeyboardManager {
 impl VirtualKeyboardManager {
     /// Create a new virtual keyboard manager.
     pub fn new() -> Self {
-        Self {
-            available: false,
-        }
+        Self { available: false }
     }
 
     /// Check if virtual keyboard protocol is available.
@@ -39,7 +37,10 @@ impl VirtualKeyboardManager {
 
     /// Inject a key press or release (placeholder).
     pub fn key(&self, keycode: u32, state: KeyState, time: u32) -> Result<()> {
-        debug!("Would inject key: keycode={}, state={:?}, time={}", keycode, state, time);
+        debug!(
+            "Would inject key: keycode={}, state={:?}, time={}",
+            keycode, state, time
+        );
         info!("Virtual keyboard protocol not yet bound - placeholder implementation");
         Ok(())
     }

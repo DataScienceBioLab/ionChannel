@@ -99,10 +99,10 @@ impl ValidationError {
             Self::NoRemoteDesktopAvailable { suggestion, .. } => Some(suggestion.clone()),
             Self::SshConnectionFailed { .. } => {
                 Some("Check VM is running and SSH is enabled".to_string())
-            }
+            },
             Self::PackageInstallationFailed { .. } => {
                 Some("Check network connectivity and package repository".to_string())
-            }
+            },
             _ => None,
         }
     }
@@ -135,4 +135,3 @@ mod tests {
         assert!(no_vm_error.suggestion().is_some());
     }
 }
-

@@ -5,11 +5,13 @@
 //! 2. Install RustDesk
 //! 3. Get connection ID
 
+use ion_validation::providers::desktop::{RemoteDesktop, SshAuth, Target};
 use ion_validation::providers::vm::{VmProvisioner, VmSpec};
-use ion_validation::providers::desktop::{RemoteDesktop, Target, SshAuth};
 
 #[cfg(feature = "libvirt")]
-use ion_validation::impls::{libvirt_provisioner::LibvirtProvisioner, rustdesk_provider::RustDeskProvider};
+use ion_validation::impls::{
+    libvirt_provisioner::LibvirtProvisioner, rustdesk_provider::RustDeskProvider,
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -19,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
         eprintln!("Run with: cargo run --example provision_and_connect --features libvirt");
         std::process::exit(1);
     }
-    
+
     #[cfg(feature = "libvirt")]
     {
         println!("\n🚀 AUTOMATED VM PROVISIONING & RUSTDESK SETUP");
@@ -27,18 +29,18 @@ async fn main() -> anyhow::Result<()> {
 
         // Use existing VM
         println!("📋 Using existing test1 VM...\n");
-        
+
         // Get VM info from benchScale
         use benchscale::backend::{Backend, LibvirtBackend};
         let backend = LibvirtBackend::new()?;
-        
+
         println!("🔍 Checking VM status...");
         match backend.get_node("test1").await {
             Ok(node) => {
                 println!("✓ VM found: {}", node.name);
                 println!("  Status: {:?}", node.status);
                 println!("  IP: {}\n", &node.ip_address);
-                
+
                 if !node.ip_address.is_empty() {
                     println!("═══════════════════════════════════════════════════════════════");
                     println!("\n📊 VM READY FOR MANUAL SETUP\n");
@@ -55,16 +57,15 @@ async fn main() -> anyhow::Result<()> {
                     println!("⚠️  VM has no IP address yet. Start it with:");
                     println!("   $ virsh start test1\n");
                 }
-            }
+            },
             Err(e) => {
                 println!("⚠️  Could not find VM: {:?}", e);
                 println!("\nCreate a VM first with:");
                 println!("   $ virsh list --all");
                 println!();
-            }
+            },
         }
     }
 
     Ok(())
 }
-

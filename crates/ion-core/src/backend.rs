@@ -123,10 +123,10 @@ pub struct CaptureStream {
 ///
 ///     // ... implement other methods
 /// #   async fn inject_input(&self, _event: ion_core::event::InputEvent) -> ion_core::backend::BackendResult<()> { Ok(()) }
-/// #   async fn start_capture(&self, _session: &ion_core::session::SessionId) -> ion_core::backend::BackendResult<ion_core::backend::CaptureStream> { 
+/// #   async fn start_capture(&self, _session: &ion_core::session::SessionId) -> ion_core::backend::BackendResult<ion_core::backend::CaptureStream> {
 /// #       todo!()
 /// #   }
-/// #   fn capabilities(&self) -> BackendCapabilities { 
+/// #   fn capabilities(&self) -> BackendCapabilities {
 /// #       BackendCapabilities {
 /// #           can_inject_keyboard: false,
 /// #           can_inject_pointer: false,
@@ -355,4 +355,3 @@ mod tests {
         let _display_type = BackendFactory::detect_display_server();
     }
 }
-

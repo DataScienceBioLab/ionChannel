@@ -4,6 +4,7 @@
 //! Platform-agnostic input injection traits.
 
 use async_trait::async_trait;
+use bitflags::bitflags;
 
 use crate::error::InputResult;
 use crate::platform::Platform;
@@ -60,32 +61,87 @@ pub trait InputInjector: Send + Sync {
     }
 }
 
-/// Capabilities of an input injector.
-#[derive(Debug, Clone)]
-pub struct InputCapabilities {
-    /// Whether keyboard input is supported
-    pub keyboard: bool,
-    /// Whether pointer (mouse) input is supported
-    pub pointer: bool,
-    /// Whether touch input is supported
-    pub touch: bool,
-    /// Whether absolute positioning is supported
-    pub absolute_pointer: bool,
-    /// Maximum touch points supported
-    pub max_touch_points: u32,
-    /// Human-readable description
-    pub description: String,
+bitflags! {
+    /// Capabilities of an input injector.
+    ///
+    /// Modern idiomatic Rust using bitflags for efficient capability testing.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct InputCapabilities: u32 {
+        /// Keyboard input is supported
+        const KEYBOARD = 1 << 0;
+        /// Pointer (mouse) input is supported
+        const POINTER = 1 << 1;
+        /// Touch input is supported
+        const TOUCH = 1 << 2;
+        /// Absolute pointer positioning is supported
+        const ABSOLUTE_POINTER = 1 << 3;
+        /// Relative pointer motion is supported
+        const RELATIVE_POINTER = 1 << 4;
+        /// Multi-touch is supported
+        const MULTI_TOUCH = 1 << 5;
+        
+        /// Standard desktop input (keyboard + pointer)
+        const STANDARD = Self::KEYBOARD.bits() | Self::POINTER.bits() | Self::RELATIVE_POINTER.bits();
+        /// Full desktop with absolute positioning
+        const FULL_DESKTOP = Self::STANDARD.bits() | Self::ABSOLUTE_POINTER.bits();
+        /// Touch device capabilities
+        const TOUCH_DEVICE = Self::TOUCH.bits() | Self::MULTI_TOUCH.bits();
+    }
 }
 
 impl Default for InputCapabilities {
     fn default() -> Self {
-        Self {
-            keyboard: true,
-            pointer: true,
-            touch: false,
-            absolute_pointer: true,
-            max_touch_points: 0,
-            description: "Unknown input".to_string(),
+        Self::STANDARD
+    }
+}
+
+impl InputCapabilities {
+    /// Check if keyboard input is supported.
+    #[must_use]
+    pub const fn has_keyboard(self) -> bool {
+        self.contains(Self::KEYBOARD)
+    }
+
+    /// Check if pointer input is supported.
+    #[must_use]
+    pub const fn has_pointer(self) -> bool {
+        self.contains(Self::POINTER)
+    }
+
+    /// Check if touch input is supported.
+    #[must_use]
+    pub const fn has_touch(self) -> bool {
+        self.contains(Self::TOUCH)
+    }
+
+    /// Check if absolute pointer positioning is supported.
+    #[must_use]
+    pub const fn has_absolute_pointer(self) -> bool {
+        self.contains(Self::ABSOLUTE_POINTER)
+    }
+
+    /// Get a human-readable description of capabilities.
+    #[must_use]
+    pub fn description(&self) -> String {
+        let mut parts = Vec::new();
+        
+        if self.has_keyboard() {
+            parts.push("keyboard");
+        }
+        if self.has_pointer() {
+            parts.push("pointer");
+        }
+        if self.has_touch() {
+            parts.push("touch");
+        }
+        if self.has_absolute_pointer() {
+            parts.push("absolute");
+        }
+        
+        if parts.is_empty() {
+            "no input".to_string()
+        } else {
+            parts.join(" + ")
         }
     }
 }
@@ -292,10 +348,17 @@ mod tests {
     }
 
     #[test]
-    fn input_capabilities_default() {
-        let caps = InputCapabilities::default();
-        assert!(caps.keyboard);
-        assert!(caps.pointer);
-        assert!(!caps.touch);
+    fn input_capabilities_bitflags() {
+        let caps = InputCapabilities::STANDARD;
+        assert!(caps.has_keyboard());
+        assert!(caps.has_pointer());
+        assert!(!caps.has_touch());
+        
+        let full = InputCapabilities::FULL_DESKTOP;
+        assert!(full.has_absolute_pointer());
+        
+        let desc = caps.description();
+        assert!(desc.contains("keyboard"));
+        assert!(desc.contains("pointer"));
     }
 }

@@ -3,7 +3,7 @@
 use crate::errors::{Result, ValidationError};
 use crate::providers::desktop::{SshAuth, Target};
 use crate::providers::portal::{
-    DeployConfig, Deployment, DeployedService, Health, PortalDeployer, PortalStatus, ServiceHealth,
+    DeployConfig, DeployedService, Deployment, Health, PortalDeployer, PortalStatus, ServiceHealth,
 };
 use async_trait::async_trait;
 use benchscale::backend::ssh::SshClient;
@@ -28,10 +28,13 @@ impl IonChannelDeployer {
                     port: target.port,
                     reason: "Key auth not supported yet, use password".to_string(),
                 });
-            }
+            },
         };
 
-        info!("Connecting to {}@{}:{}", target.username, target.host, target.port);
+        info!(
+            "Connecting to {}@{}:{}",
+            target.username, target.host, target.port
+        );
 
         SshClient::connect(&target.host, target.port, &target.username, &password)
             .await
@@ -70,7 +73,7 @@ impl PortalDeployer for IonChannelDeployer {
             info!("Installing dependency: {}", dep);
             let install_cmd = format!("sudo apt-get install -y {}", dep);
             let (exit_code, _stdout, stderr) = self.exec_ssh(&mut ssh, &install_cmd).await?;
-            
+
             if exit_code != 0 {
                 warn!("Failed to install {}: {}", dep, stderr);
             }
@@ -81,7 +84,7 @@ impl PortalDeployer for IonChannelDeployer {
         // 1. Transfer ionChannel source to target
         // 2. Build the crates on target
         // 3. Install and start services
-        
+
         info!("ionChannel deployment simulated (not fully implemented yet)");
 
         let deployed_services = config
@@ -137,7 +140,7 @@ impl PortalDeployer for IonChannelDeployer {
 
     async fn get_status(&self, deployment: &Deployment) -> Result<PortalStatus> {
         let health = self.verify(deployment).await?;
-        
+
         if health.healthy {
             Ok(PortalStatus::Running)
         } else {
@@ -178,4 +181,3 @@ mod tests {
         assert!(deployer.is_available().await);
     }
 }
-

@@ -3,7 +3,6 @@
 
 //! Wayland protocol implementations for input injection and screen capture.
 
-pub mod virtual_pointer;
 pub mod virtual_keyboard;
+pub mod virtual_pointer;
 // pub mod screencopy; // Next
-

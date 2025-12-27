@@ -26,8 +26,8 @@ impl WaylandConnection {
         debug!("Connecting to Wayland compositor");
 
         // Get WAYLAND_DISPLAY
-        let wayland_display = std::env::var("WAYLAND_DISPLAY")
-            .context("WAYLAND_DISPLAY not set")?;
+        let wayland_display =
+            std::env::var("WAYLAND_DISPLAY").context("WAYLAND_DISPLAY not set")?;
 
         debug!("Using WAYLAND_DISPLAY: {}", wayland_display);
 
@@ -36,15 +36,15 @@ impl WaylandConnection {
         // 1. Connect to the compositor
         // 2. Query available globals
         // 3. Bind to protocol interfaces
-        
+
         // Probe for capabilities
         // This would check for:
         // - zwlr_virtual_pointer_manager_v1
         // - zwp_virtual_keyboard_manager_v1
         // - zwlr_screencopy_manager_v1
-        
+
         let compositor_name = Self::detect_compositor_name();
-        let (has_virtual_pointer, has_virtual_keyboard, has_screencopy) = 
+        let (has_virtual_pointer, has_virtual_keyboard, has_screencopy) =
             Self::probe_protocols().await;
 
         info!("Connected to Wayland compositor: {}", compositor_name);
@@ -93,7 +93,7 @@ impl WaylandConnection {
         if let Ok(desktop) = std::env::var("XDG_CURRENT_DESKTOP") {
             return desktop;
         }
-        
+
         "Wayland".to_string()
     }
 
@@ -105,11 +105,11 @@ impl WaylandConnection {
         // Conservative defaults - assume protocols might be available
         // In reality, we'd query wl_registry and check for:
         // - zwlr_virtual_pointer_manager_v1
-        // - zwp_virtual_keyboard_manager_v1  
+        // - zwp_virtual_keyboard_manager_v1
         // - zwlr_screencopy_manager_v1
-        
+
         // For wlroots-based compositors (Sway, River, etc.), these are usually available
-        let is_wlroots = std::env::var("SWAYSOCK").is_ok() 
+        let is_wlroots = std::env::var("SWAYSOCK").is_ok()
             || std::env::var("XDG_CURRENT_DESKTOP")
                 .map(|d| d.contains("sway") || d.contains("river"))
                 .unwrap_or(false);
@@ -124,4 +124,3 @@ impl WaylandConnection {
         }
     }
 }
-

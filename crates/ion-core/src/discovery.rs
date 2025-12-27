@@ -34,18 +34,20 @@ pub enum Capability {
 pub trait BackendProvider: Send + Sync {
     /// Get the unique identifier for this provider.
     fn id(&self) -> &str;
-    
+
     /// Get human-readable name for this provider.
     fn name(&self) -> &str;
-    
+
     /// Check if this provider is available in the current environment.
     fn is_available<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>>;
-    
+
     /// Get the capabilities this provider offers.
     fn capabilities(&self) -> Vec<Capability>;
-    
+
     /// Create an instance of the backend.
-    fn create_backend<'a>(&'a self) -> Pin<Box<dyn Future<Output = Option<Arc<dyn CompositorBackend>>> + Send + 'a>>;
+    fn create_backend<'a>(
+        &'a self,
+    ) -> Pin<Box<dyn Future<Output = Option<Arc<dyn CompositorBackend>>> + Send + 'a>>;
 }
 
 /// Registry for backend providers.
@@ -72,7 +74,10 @@ impl BackendRegistry {
     }
 
     /// Find all providers that offer a specific capability.
-    pub async fn find_by_capability(&self, capability: &Capability) -> Vec<Arc<dyn BackendProvider>> {
+    pub async fn find_by_capability(
+        &self,
+        capability: &Capability,
+    ) -> Vec<Arc<dyn BackendProvider>> {
         let providers = self.providers.read().await;
         providers
             .iter()
@@ -82,33 +87,73 @@ impl BackendRegistry {
     }
 
     /// Find all available providers (providers that report they're available in this environment).
+    ///
+    /// **Performance**: Checks availability in parallel for maximum concurrency.
     pub async fn find_available(&self) -> Vec<Arc<dyn BackendProvider>> {
+        use futures::future::join_all;
+        
         let providers = self.providers.read().await;
-        let mut available = Vec::new();
         
-        for provider in providers.iter() {
-            if provider.is_available().await {
-                available.push(provider.clone());
-            }
-        }
+        // Create parallel availability checks
+        let checks: Vec<_> = providers
+            .iter()
+            .map(|provider| {
+                let p = Arc::clone(provider);
+                async move {
+                    let available = p.is_available().await;
+                    (p, available)
+                }
+            })
+            .collect();
         
-        available
+        // Execute all checks concurrently
+        let results = join_all(checks).await;
+        
+        // Filter to only available providers
+        results
+            .into_iter()
+            .filter_map(|(provider, available)| {
+                if available {
+                    Some(provider)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     /// Find the best available backend.
     ///
     /// Returns the first available provider, or None if no providers are available.
-    /// Providers are checked in registration order (allowing priority ordering).
+    /// Providers are checked in **parallel** but results respect registration order.
+    ///
+    /// **Performance**: All providers checked concurrently, result selected by priority.
     pub async fn find_best(&self) -> Option<Arc<dyn BackendProvider>> {
+        use futures::future::join_all;
+        
         let providers = self.providers.read().await;
-        
-        for provider in providers.iter() {
-            if provider.is_available().await {
-                return Some(provider.clone());
-            }
-        }
-        
-        None
+
+        // Check all providers in parallel
+        let checks: Vec<_> = providers
+            .iter()
+            .enumerate()
+            .map(|(idx, provider)| {
+                let p = Arc::clone(provider);
+                async move {
+                    let available = p.is_available().await;
+                    (idx, p, available)
+                }
+            })
+            .collect();
+
+        let results = join_all(checks).await;
+
+        // Return first available (by original registration order)
+        results
+            .into_iter()
+            .filter(|(_, _, available)| *available)
+            .min_by_key(|(idx, _, _)| *idx)
+            .map(|(_, provider, _)| provider)
     }
 
     /// Create a backend instance from the best available provider.
@@ -121,14 +166,11 @@ impl BackendRegistry {
     pub async fn query_capabilities(&self) -> HashMap<String, Vec<Capability>> {
         let providers = self.providers.read().await;
         let mut result = HashMap::new();
-        
+
         for provider in providers.iter() {
-            result.insert(
-                provider.id().to_string(),
-                provider.capabilities(),
-            );
+            result.insert(provider.id().to_string(), provider.capabilities());
         }
-        
+
         result
     }
 }
@@ -141,10 +183,8 @@ impl Default for BackendRegistry {
 
 /// Convert BackendCapabilities to a list of Capability enums.
 pub fn capabilities_to_list(caps: &BackendCapabilities) -> Vec<Capability> {
-    let mut result = vec![
-        Capability::DisplayServer(caps.display_server_type),
-    ];
-    
+    let mut result = vec![Capability::DisplayServer(caps.display_server_type)];
+
     if caps.can_inject_keyboard {
         result.push(Capability::InjectKeyboard);
     }
@@ -154,7 +194,7 @@ pub fn capabilities_to_list(caps: &BackendCapabilities) -> Vec<Capability> {
     if caps.can_capture_screen {
         result.push(Capability::CaptureScreen);
     }
-    
+
     result
 }
 
@@ -187,7 +227,9 @@ mod tests {
             self.capabilities.clone()
         }
 
-        fn create_backend<'a>(&'a self) -> Pin<Box<dyn Future<Output = Option<Arc<dyn CompositorBackend>>> + Send + 'a>> {
+        fn create_backend<'a>(
+            &'a self,
+        ) -> Pin<Box<dyn Future<Output = Option<Arc<dyn CompositorBackend>>> + Send + 'a>> {
             Box::pin(async { None }) // Mock doesn't create real backends
         }
     }
@@ -195,16 +237,16 @@ mod tests {
     #[tokio::test]
     async fn test_registry_registration() {
         let registry = BackendRegistry::new();
-        
+
         let provider = Arc::new(MockProvider {
             id: "test".to_string(),
             name: "Test Provider".to_string(),
             available: true,
             capabilities: vec![Capability::InjectKeyboard],
         });
-        
+
         registry.register(provider).await;
-        
+
         let caps = registry.query_capabilities().await;
         assert_eq!(caps.len(), 1);
         assert!(caps.contains_key("test"));
@@ -213,25 +255,27 @@ mod tests {
     #[tokio::test]
     async fn test_find_by_capability() {
         let registry = BackendRegistry::new();
-        
+
         let provider1 = Arc::new(MockProvider {
             id: "kbd".to_string(),
             name: "Keyboard Provider".to_string(),
             available: true,
             capabilities: vec![Capability::InjectKeyboard],
         });
-        
+
         let provider2 = Arc::new(MockProvider {
             id: "ptr".to_string(),
             name: "Pointer Provider".to_string(),
             available: true,
             capabilities: vec![Capability::InjectPointer],
         });
-        
+
         registry.register(provider1).await;
         registry.register(provider2).await;
-        
-        let kbd_providers = registry.find_by_capability(&Capability::InjectKeyboard).await;
+
+        let kbd_providers = registry
+            .find_by_capability(&Capability::InjectKeyboard)
+            .await;
         assert_eq!(kbd_providers.len(), 1);
         assert_eq!(kbd_providers[0].id(), "kbd");
     }
@@ -239,7 +283,7 @@ mod tests {
     #[tokio::test]
     async fn test_find_best_respects_order() {
         let registry = BackendRegistry::new();
-        
+
         // Register in priority order
         let provider1 = Arc::new(MockProvider {
             id: "first".to_string(),
@@ -247,17 +291,17 @@ mod tests {
             available: true,
             capabilities: vec![],
         });
-        
+
         let provider2 = Arc::new(MockProvider {
             id: "second".to_string(),
             name: "Second Priority".to_string(),
             available: true,
             capabilities: vec![],
         });
-        
+
         registry.register(provider1).await;
         registry.register(provider2).await;
-        
+
         let best = registry.find_best().await.unwrap();
         assert_eq!(best.id(), "first");
     }
@@ -265,26 +309,25 @@ mod tests {
     #[tokio::test]
     async fn test_find_best_skips_unavailable() {
         let registry = BackendRegistry::new();
-        
+
         let provider1 = Arc::new(MockProvider {
             id: "unavailable".to_string(),
             name: "Unavailable".to_string(),
             available: false,
             capabilities: vec![],
         });
-        
+
         let provider2 = Arc::new(MockProvider {
             id: "available".to_string(),
             name: "Available".to_string(),
             available: true,
             capabilities: vec![],
         });
-        
+
         registry.register(provider1).await;
         registry.register(provider2).await;
-        
+
         let best = registry.find_best().await.unwrap();
         assert_eq!(best.id(), "available");
     }
 }
-

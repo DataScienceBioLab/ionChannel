@@ -1,6 +1,6 @@
 //! Quick helper to get RustDesk ID from a VM
 
-use ion_validation::providers::desktop::{RemoteDesktop, Target, SshAuth};
+use ion_validation::providers::desktop::{RemoteDesktop, SshAuth, Target};
 
 #[cfg(feature = "libvirt")]
 use ion_validation::impls::rustdesk_provider::RustDeskProvider;
@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
         eprintln!("Run with: cargo run --example get_rustdesk_id --features libvirt");
         std::process::exit(1);
     }
-    
+
     #[cfg(feature = "libvirt")]
     {
         println!("\n🔍 Getting RustDesk ID from test1 VM\n");
@@ -32,7 +32,7 @@ async fn main() -> anyhow::Result<()> {
         let provider = RustDeskProvider::new();
 
         println!("📡 Connecting to VM...");
-        
+
         // Try to get RustDesk ID
         match provider.get_id(&target).await {
             Ok(id) => {
@@ -45,7 +45,7 @@ async fn main() -> anyhow::Result<()> {
                 println!("  2. Open RustDesk");
                 println!("  3. Enter ID: {}", id);
                 println!("  4. Connect! ✅\n");
-            }
+            },
             Err(e) => {
                 println!("\n⚠️  Could not get RustDesk ID: {:?}", e);
                 println!("\nThis likely means:");
@@ -56,10 +56,9 @@ async fn main() -> anyhow::Result<()> {
                 println!("  2. sudo dpkg -i /tmp/rustdesk.deb");
                 println!("  3. rustdesk &");
                 println!("  4. rustdesk --get-id\n");
-            }
+            },
         }
     }
 
     Ok(())
 }
-

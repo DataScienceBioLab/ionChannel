@@ -79,6 +79,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(feature = "mcp")]
     fn test_target_serialization() {
         let target = Target {
             host: "192.168.122.54".to_string(),
@@ -93,4 +94,3 @@ mod tests {
         assert!(json.contains("192.168.122.54"));
     }
 }
-
