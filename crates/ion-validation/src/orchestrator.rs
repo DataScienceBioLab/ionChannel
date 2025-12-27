@@ -4,9 +4,9 @@ use crate::capabilities::CapabilityRegistry;
 use crate::errors::{Result, ValidationError};
 use crate::events::{ValidationEvent, ValidationMetrics};
 use crate::providers::{
-    desktop::{RemoteDesktop, SshAuth, Target},
-    portal::{DeployConfig, PortalDeployer},
-    vm::{VmProvisioner, VmSpec},
+    desktop::{SshAuth, Target},
+    portal::DeployConfig,
+    vm::VmSpec,
 };
 use chrono::Utc;
 use futures::stream::Stream;

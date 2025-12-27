@@ -8,7 +8,7 @@ use crate::providers::portal::{
 use async_trait::async_trait;
 use benchscale::backend::ssh::SshClient;
 use std::path::PathBuf;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 /// ionChannel portal deployer
 pub struct IonChannelDeployer {
