@@ -44,7 +44,6 @@ pub enum ValidationEvent {
     InstallingPackage {
         timestamp: DateTime<Utc>,
         package: String,
-        version: Option<String>,
     },
 
     /// Package successfully installed
@@ -52,7 +51,32 @@ pub enum ValidationEvent {
         timestamp: DateTime<Utc>,
         package: String,
         version: String,
-        duration: Duration,
+    },
+
+    /// Remote desktop ready with ID
+    RemoteDesktopReady {
+        timestamp: DateTime<Utc>,
+        desktop_id: String,
+    },
+
+    /// Portal deployment started
+    DeployingPortal {
+        timestamp: DateTime<Utc>,
+        target: String,
+    },
+
+    /// Portal successfully deployed
+    PortalDeployed {
+        timestamp: DateTime<Utc>,
+        deployment_id: String,
+        services: Vec<String>,
+    },
+
+    /// Verification complete
+    VerificationComplete {
+        timestamp: DateTime<Utc>,
+        success: bool,
+        details: String,
     },
 
     /// Service deployment started
@@ -151,6 +175,10 @@ impl ValidationEvent {
             | Self::SshConnected { timestamp, .. }
             | Self::InstallingPackage { timestamp, .. }
             | Self::PackageInstalled { timestamp, .. }
+            | Self::RemoteDesktopReady { timestamp, .. }
+            | Self::DeployingPortal { timestamp, .. }
+            | Self::PortalDeployed { timestamp, .. }
+            | Self::VerificationComplete { timestamp, .. }
             | Self::DeployingService { timestamp, .. }
             | Self::ServiceStarted { timestamp, .. }
             | Self::HealthCheck { timestamp, .. }
@@ -186,7 +214,19 @@ impl ValidationEvent {
                 format!("SSH connected: {}:{}", host, port)
             },
             Self::InstallingPackage { package, .. } => format!("Installing: {}", package),
-            Self::PackageInstalled { package, .. } => format!("Installed: {}", package),
+            Self::PackageInstalled { package, version, .. } => {
+                format!("Installed: {} {}", package, version)
+            }
+            Self::RemoteDesktopReady { desktop_id, .. } => {
+                format!("Remote Desktop ready: {}", desktop_id)
+            }
+            Self::DeployingPortal { target, .. } => format!("Deploying portal to {}", target),
+            Self::PortalDeployed { services, .. } => {
+                format!("Portal deployed: {} services", services.len())
+            }
+            Self::VerificationComplete { success, details, .. } => {
+                format!("Verification: {} - {}", if *success { "SUCCESS" } else { "FAILED" }, details)
+            }
             Self::DeployingService { service, .. } => format!("Deploying: {}", service),
             Self::ServiceStarted { service, .. } => format!("Started: {}", service),
             Self::HealthCheck {
@@ -233,7 +273,6 @@ mod tests {
             timestamp: Utc::now(),
             package: "rustdesk".to_string(),
             version: "1.2.3".to_string(),
-            duration: Duration::from_secs(10),
         };
 
         let desc = event.description();

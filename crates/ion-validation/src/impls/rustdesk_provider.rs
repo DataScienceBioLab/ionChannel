@@ -7,12 +7,29 @@ use benchscale::backend::ssh::SshClient;
 use tracing::{info, warn};
 
 /// RustDesk remote desktop provider
-pub struct RustDeskProvider;
+pub struct RustDeskProvider {
+    /// RustDesk download URL (runtime configurable via env)
+    download_url: String,
+    /// Version to install (from config)
+    version: String,
+}
 
 impl RustDeskProvider {
-    /// Create a new RustDesk provider
+    /// Create a new RustDesk provider with environment-driven config
     pub fn new() -> Self {
-        Self
+        let version = std::env::var("RUSTDESK_VERSION")
+            .unwrap_or_else(|_| "1.2.3".to_string());
+        
+        let download_url = std::env::var("RUSTDESK_DOWNLOAD_URL")
+            .unwrap_or_else(|_| format!(
+                "https://github.com/rustdesk/rustdesk/releases/download/{}/rustdesk-{}-x86_64.deb",
+                version, version
+            ));
+
+        Self {
+            download_url,
+            version,
+        }
     }
 
     /// Connect to target via SSH
@@ -79,11 +96,14 @@ impl RemoteDesktop for RustDeskProvider {
         }
 
         // Download and install RustDesk
-        info!("Downloading RustDesk...");
-        let download_cmd = "wget -q https://github.com/rustdesk/rustdesk/releases/download/1.2.3/rustdesk-1.2.3-x86_64.deb -O /tmp/rustdesk.deb";
+        info!("Downloading RustDesk version {} from {}", self.version, self.download_url);
+        let download_cmd = format!(
+            "wget -q {} -O /tmp/rustdesk.deb",
+            self.download_url
+        );
 
         let (download_exit, _stdout, download_stderr) =
-            self.exec_ssh(&mut ssh, download_cmd).await?;
+            self.exec_ssh(&mut ssh, &download_cmd).await?;
 
         if download_exit != 0 {
             return Err(ValidationError::PackageInstallationFailed {
@@ -109,7 +129,7 @@ impl RemoteDesktop for RustDeskProvider {
             let version = self
                 .get_version(&mut ssh)
                 .await
-                .unwrap_or_else(|_| "1.2.3".to_string());
+                .unwrap_or_else(|_| self.version.clone());
             return Ok(Installation {
                 version,
                 path: verify_stdout.trim().to_string(),
