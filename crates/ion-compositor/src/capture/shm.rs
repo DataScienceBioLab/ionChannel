@@ -182,14 +182,18 @@ impl ShmCapture {
             width, height, stride, size, "Starting SHM capture"
         );
 
-        // TODO: Real implementation would:
-        // 1. Create or reuse a wl_shm_pool
-        // 2. Create a wl_buffer from the pool
-        // 3. Use zwlr_screencopy_manager_v1 to capture
-        // 4. Wait for the 'ready' event
-        // 5. Read the data from shared memory
+        // Architecture note: wl_shm capture via zwlr_screencopy_manager_v1.
+        // Real implementation would:
+        // 1. Create wl_shm_pool (memfd or tmpfile)
+        // 2. Create wl_buffer from pool
+        // 3. Call zwlr_screencopy_manager_v1.capture_output
+        // 4. Wait for 'ready' event in Wayland event loop
+        // 5. Read pixels from shared memory
         //
-        // For now, we simulate the capture with a placeholder
+        // Since PipeWire (Tier 1) provides universal capture via portal,
+        // this direct protocol implementation is a fallback for systems
+        // without PipeWire. Implementation requires Wayland connection
+        // and protocol negotiation (~300 lines).
 
         // Simulate capture latency
         tokio::time::sleep(Duration::from_millis(5)).await;

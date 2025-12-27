@@ -19,6 +19,8 @@ use surge_ping::{Client, Config, PingIdentifier, PingSequence};
 use tracing::{debug, info};
 
 const MAX_PARALLEL_PINGS: usize = 50;
+/// Default SSH port (standard), can be overridden via SSH config
+const DEFAULT_SSH_PORT: u16 = 22;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VmInfo {
@@ -184,10 +186,10 @@ impl VmDiscovery {
                             ip: hostname,
                             discovery_method: "ssh-config".to_string(),
                             username: current_user.take(),
-                            services: if current_port.is_some() {
-                                vec![format!("ssh:{}", current_port.unwrap())]
+                            services: if let Some(port) = current_port.take() {
+                                vec![format!("ssh:{}", port)]
                             } else {
-                                vec!["ssh:22".to_string()]
+                                vec![format!("ssh:{}", DEFAULT_SSH_PORT)]
                             },
                         });
                     }

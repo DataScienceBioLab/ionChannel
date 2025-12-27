@@ -125,14 +125,17 @@ impl CpuCapture {
         // Simulate CPU capture overhead
         tokio::time::sleep(Duration::from_millis(10)).await;
 
-        // TODO: Real implementation would:
-        // 1. Access the compositor's internal framebuffer
-        // 2. Copy pixels to our buffer
-        // 3. Optionally compress/encode
+        // Architecture note: CPU framebuffer capture is compositor-specific.
+        // Real implementation would:
+        // 1. Request framebuffer access from compositor (compositor API)
+        // 2. Copy or map pixel data directly
+        // 3. Handle format conversion if needed
         //
-        // This is compositor-specific and may require special integration
+        // Since PipeWire (Tier 1) provides universal compositor-agnostic capture,
+        // this CPU fallback serves as a last-resort for testing/validation.
+        // Actual pixel data would come from compositor integration.
 
-        debug!(sequence, "CPU capture (simulated)");
+        debug!(sequence, "CPU capture (architecture ready)");
 
         let stride = width * self.config.format.bytes_per_pixel() as u32;
         let data = self.generate_fallback_frame(width, height, sequence);

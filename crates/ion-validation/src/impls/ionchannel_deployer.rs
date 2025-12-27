@@ -93,6 +93,58 @@ impl IonChannelDeployer {
         Ok(())
     }
 
+    /// Discover service endpoint by runtime probing (primal philosophy)
+    async fn discover_service_endpoint(
+        &self,
+        ssh: &mut SshClient,
+        crate_name: &str,
+        pid: Option<u32>,
+    ) -> Option<String> {
+        // Services expose their endpoints via well-known methods:
+        // 1. D-Bus service name (for portal services)
+        // 2. Listening ports (netstat/ss)
+        // 3. Environment/config files
+        
+        if let Some(pid) = pid {
+            // Try to find listening ports for this PID
+            let port_cmd = format!("ss -tlnp 2>/dev/null | grep 'pid={}' | awk '{{print $4}}'", pid);
+            if let Ok((0, stdout, _)) = self.exec_ssh(ssh, &port_cmd).await {
+                let ports: Vec<&str> = stdout.lines().collect();
+                if !ports.is_empty() {
+                    // Extract port from address like "127.0.0.1:8080" or "[::]:8080"
+                    if let Some(first_port) = ports.first() {
+                        if let Some(port) = first_port.rsplit(':').next() {
+                            let endpoint = match crate_name {
+                                name if name.contains("portal") => {
+                                    format!("http://localhost:{}", port)
+                                }
+                                _ => format!("tcp://localhost:{}", port),
+                            };
+                            info!("Discovered endpoint for {}: {}", crate_name, endpoint);
+                            return Some(endpoint);
+                        }
+                    }
+                }
+            }
+        }
+
+        // For D-Bus services, check if registered
+        if crate_name.contains("portal") {
+            let dbus_check = "busctl list 2>/dev/null | grep 'org.freedesktop.impl.portal'";
+            if let Ok((0, stdout, _)) = self.exec_ssh(ssh, dbus_check).await {
+                if !stdout.trim().is_empty() {
+                    let endpoint = "dbus:org.freedesktop.impl.portal.desktop.cosmic".to_string();
+                    info!("Discovered D-Bus endpoint for {}: {}", crate_name, endpoint);
+                    return Some(endpoint);
+                }
+            }
+        }
+
+        // No endpoint discovered (service might not expose one yet)
+        debug!("No endpoint discovered for {} (this is okay for some services)", crate_name);
+        None
+    }
+
     /// Clone ionChannel source to target
     async fn clone_source(&self, ssh: &mut SshClient) -> Result<PathBuf> {
         info!("Cloning ionChannel source from {}", self.repo_url);
@@ -209,10 +261,13 @@ impl IonChannelDeployer {
                 let pid = stdout.trim().parse::<u32>().ok();
                 info!("Started {} with PID {:?}", crate_name, pid);
 
+                // Discover endpoint by probing the service
+                let endpoint = self.discover_service_endpoint(ssh, crate_name, pid).await;
+
                 deployed_services.push(DeployedService {
                     name: crate_name.clone(),
                     pid,
-                    endpoint: None, // TODO: Discover from service
+                    endpoint,
                 });
             } else {
                 warn!("Failed to start {}: {}", crate_name, stderr);

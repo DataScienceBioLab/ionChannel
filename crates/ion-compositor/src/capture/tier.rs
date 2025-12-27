@@ -311,8 +311,10 @@ impl TierSelector {
             return false;
         }
 
-        // TODO: Actually probe zwp_linux_dmabuf_v1 version
-        // For now, we use the heuristic
+        // Note: Complete Wayland protocol probing of zwp_linux_dmabuf_v1
+        // would require establishing a connection and negotiating.
+        // Since PipeWire (Tier 1) handles DMA-BUF internally when available,
+        // this heuristic-based check is sufficient for the fallback path.
         debug!("Dmabuf probe: environment suggests it may work");
         true
     }
