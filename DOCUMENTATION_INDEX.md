@@ -1,220 +1,239 @@
-# ionChannel Documentation
+# ionChannel Documentation Index
 
-**Complete documentation for the ionChannel remote desktop portal project**
-
----
-
-## 🚀 Quick Start
-
-New to ionChannel? Start here:
-
-1. **[README.md](README.md)** - Project overview and quick start
-2. **[QUICKSTART.md](QUICKSTART.md)** - Build and run instructions  
-3. **[STATUS.md](STATUS.md)** - Current status and metrics
-4. **[DEMO_GUIDE.md](DEMO_GUIDE.md)** - ⭐ **Complete demo guide with runnable examples**
-5. **[E2E_COMPLETE.md](E2E_COMPLETE.md)** - ⭐ **E2E implementation summary**
-6. **[NEXT_STEPS.md](NEXT_STEPS.md)** - What to do next
+Complete guide to all ionChannel documentation.
 
 ---
 
-## 📊 Status & Completion
+## 🚀 Start Here
 
-### Current Status
-- **[FINAL_STATUS.md](FINAL_STATUS.md)** (12 KB) - **READ THIS**
-  - Complete status report with all metrics
-  - Deployment checklist
-  - Architecture highlights
-  - Success criteria verification
+**New to ionChannel? Read these in order:**
 
-- **[STATUS.md](STATUS.md)** (8 KB)
-  - Current development status
-  - Test counts and metrics
-  - Recent achievements
+1. **[README.md](../README.md)** - Project overview and quick start
+2. **[QUICKSTART.md](../QUICKSTART.md)** - Build and run instructions
+3. **[READY_FOR_DEMO.md](../READY_FOR_DEMO.md)** - Quick demo reference
+4. **[DEMO_GUIDE.md](../DEMO_GUIDE.md)** - Complete demo guide
+
+---
+
+## 📊 Current Status
+
+### Project Status
+- **[STATUS.md](../STATUS.md)** - Current metrics and achievements
+- **[FINAL_STATUS_COMPLETE.md](../FINAL_STATUS_COMPLETE.md)** - Comprehensive status report
+- **[E2E_COMPLETE.md](../E2E_COMPLETE.md)** - E2E implementation summary
+
+---
+
+## 🏗️ Architecture
+
+### Core Architecture
+- **[CAPABILITY_BASED_VM_DISCOVERY.md](../CAPABILITY_BASED_VM_DISCOVERY.md)** - Discovery patterns
+- **[BENCHSCALE_INTEGRATION.md](../BENCHSCALE_INTEGRATION.md)** - benchScale v2.0.0 integration
 
 ### Implementation Details
-- **[IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)** (15 KB)
-  - Complete implementation report
-  - All completed features
-  - Primal philosophy compliance
-  - Code quality analysis
+See [reports/](./reports/) for detailed session reports:
+- `COMPREHENSIVE_AUDIT_REPORT.md` - Initial audit findings
+- `EVOLUTION_REPORT.md` - Modernization efforts
+- `DEPLOYMENT_REPORT.md` - Deployment readiness
+- `IMPLEMENTATION_COMPLETE.md` - Implementation summary
+- `EXECUTIVE_SUMMARY.md` - High-level overview
 
 ---
 
-## 📚 Comprehensive Reports
+## 🎮 Demonstrations
 
-### Code Evolution
-- **[EVOLUTION_REPORT.md](EVOLUTION_REPORT.md)** (13 KB)
-  - Modern Rust patterns applied
-  - Performance improvements (5-10x)
-  - Bitflags, parallel, const functions
+### Demo Guides
+- **[DEMO_GUIDE.md](../DEMO_GUIDE.md)** - Complete guide with troubleshooting
+- **[READY_FOR_DEMO.md](../READY_FOR_DEMO.md)** - Quick reference
 
-### Initial Audit
-- **[COMPREHENSIVE_AUDIT_REPORT.md](COMPREHENSIVE_AUDIT_REPORT.md)** (19 KB)
-  - Full codebase audit
-  - Architecture review
-  - Testing coverage analysis
+### Running Demos
+```bash
+# Full E2E demo (recommended)
+./RUN_DEMO.sh
 
-### Deployment
-- **[DEPLOYMENT_REPORT.md](DEPLOYMENT_REPORT.md)** (8 KB)
-  - Production deployment guide
-  - Installation procedures
-  - Configuration
+# Or run directly
+cargo run -p ion-validation --example full_e2e_demo --features libvirt
 
-### Executive Overview
-- **[EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md)** (8 KB)
-  - High-level overview
-  - Key achievements
-  - Decision-maker focused
-
----
-
-## 🎯 Action Plans
-
-- **[NEXT_STEPS.md](NEXT_STEPS.md)** (9 KB)
-  - Detailed action plan
-  - Deployment path
-  - Future roadmap
-
----
-
-## 🏗️ Technical Documentation
-
-### Architecture
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture
-- **[docs/BACKENDS.md](docs/BACKENDS.md)** - Backend implementations
-- **[specs/00_MASTER_OVERVIEW.md](specs/00_MASTER_OVERVIEW.md)** - Master specification
-
-### Capabilities
-- **[CAPABILITY_DISCOVERY.md](CAPABILITY_DISCOVERY.md)** (10 KB)
-  - Discovery system design
-  - Primal philosophy implementation
-
-### Validation
-- **[VALIDATION.md](VALIDATION.md)** (3 KB)
-  - Validation approach
-  - Testing strategy
-
----
-
-## 📦 Per-Crate Documentation
-
-Each crate has its own README:
-
-- [ion-core](crates/ion-core/README.md) - Core traits and types
-- [ion-traits](crates/ion-traits/README.md) - Platform-agnostic traits
-- [ion-portal](crates/ion-portal/README.md) - D-Bus portal
-- [ion-compositor](crates/ion-compositor/README.md) - Input & capture
-- [ion-backend-cosmic](crates/ion-backend-cosmic/README.md) - COSMIC backend
-- [ion-backend-wayland](crates/ion-backend-wayland/README.md) - Wayland backend
-- [ion-deploy](crates/ion-deploy/README.md) - Deployment tool
-- [ion-validation](crates/ion-validation/README.md) - Validation framework
-
----
-
-## 🎓 By Purpose
-
-### For Developers
-1. [README.md](README.md) - Project overview
-2. [QUICKSTART.md](QUICKSTART.md) - Build & run
-3. [STATUS.md](STATUS.md) - Current state
-4. [EVOLUTION_REPORT.md](EVOLUTION_REPORT.md) - Modern patterns
-5. Crate READMEs - Implementation details
-
-### For System Administrators  
-1. [DEPLOYMENT_REPORT.md](DEPLOYMENT_REPORT.md) - How to deploy
-2. [QUICKSTART.md](QUICKSTART.md) - Build instructions
-3. [crates/ion-deploy/README.md](crates/ion-deploy/README.md) - Deployment tool
-
-### For Decision Makers
-1. [FINAL_STATUS.md](FINAL_STATUS.md) - Complete status
-2. [EXECUTIVE_SUMMARY.md](EXECUTIVE_SUMMARY.md) - High-level overview
-3. [STATUS.md](STATUS.md) - Current metrics
-
-### For QA/Testing
-1. [VALIDATION.md](VALIDATION.md) - Validation approach
-2. [tests/README.md](tests/README.md) - Test suite
-3. [COMPREHENSIVE_AUDIT_REPORT.md](COMPREHENSIVE_AUDIT_REPORT.md) - Quality analysis
-
----
-
-## 📈 Metrics & Performance
-
-- **Tests:** 235+ passing (100%)
-- **Unsafe Code:** 0 blocks (forbidden)
-- **Technical Debt:** 0 (eliminated)
-- **Performance:** 5-10x improvements
-- **Memory:** 10x reduction (bitflags)
-- **Documentation:** 108 KB comprehensive
-
----
-
-## 🔍 Quick Reference
-
-| Need to... | Read... |
-|------------|---------|
-| Get started | [QUICKSTART.md](QUICKSTART.md) |
-| Understand current status | [FINAL_STATUS.md](FINAL_STATUS.md) |
-| Know what's next | [NEXT_STEPS.md](NEXT_STEPS.md) |
-| Deploy to production | [DEPLOYMENT_REPORT.md](DEPLOYMENT_REPORT.md) |
-| Understand architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| See all improvements | [EVOLUTION_REPORT.md](EVOLUTION_REPORT.md) |
-| Review code quality | [COMPREHENSIVE_AUDIT_REPORT.md](COMPREHENSIVE_AUDIT_REPORT.md) |
-
----
-
-## 📝 Document Organization
-
-```
-Root Documentation (13 files, ~110 KB)
-├── Quick Start
-│   ├── README.md (9 KB) - Overview
-│   ├── QUICKSTART.md (2 KB) - Build guide
-│   └── STATUS.md (8 KB) - Current status
-│
-├── Status & Completion
-│   ├── FINAL_STATUS.md (12 KB) - **Complete status report**
-│   └── IMPLEMENTATION_COMPLETE.md (15 KB) - Implementation details
-│
-├── Comprehensive Reports
-│   ├── COMPREHENSIVE_AUDIT_REPORT.md (19 KB) - Full audit
-│   ├── EVOLUTION_REPORT.md (13 KB) - Modernization
-│   ├── DEPLOYMENT_REPORT.md (8 KB) - Deployment
-│   └── EXECUTIVE_SUMMARY.md (8 KB) - High-level
-│
-├── Technical References
-│   ├── CAPABILITY_DISCOVERY.md (10 KB) - Discovery system
-│   ├── VALIDATION.md (3 KB) - Validation
-│   └── NEXT_STEPS.md (9 KB) - Action plan
-│
-└── This Index
-    └── DOCUMENTATION_INDEX.md (this file)
+# Test suite
+./TEST_SUITE.sh
 ```
 
 ---
 
-## ✅ Current Status (December 27, 2025)
+## 🔧 Development
 
-**Production Ready** - All implementations complete
+### Getting Started
+- **[QUICKSTART.md](../QUICKSTART.md)** - Build instructions
+- **[NEXT_STEPS.md](../NEXT_STEPS.md)** - Future enhancements
 
-- Core portal service: Ready to deploy
-- Deployment tool: Fully functional  
-- Validation framework: Architecture complete
-- Test coverage: 235+ tests passing
-- Code quality: Perfect (0 unsafe, 0 debt)
-- Documentation: Comprehensive
-
----
-
-## 🚀 Getting Started Path
-
-1. **Read** [README.md](README.md) - 5 minutes
-2. **Build** using [QUICKSTART.md](QUICKSTART.md) - 10 minutes  
-3. **Review** [FINAL_STATUS.md](FINAL_STATUS.md) - 10 minutes
-4. **Deploy** following [DEPLOYMENT_REPORT.md](DEPLOYMENT_REPORT.md) - 30 minutes
-
-**Total: ~1 hour to understand and deploy**
+### Specifications
+See [../specs/](../specs/) for detailed specifications:
+- `00_MASTER_OVERVIEW.md` - Master overview
+- `01_ARCHITECTURE.md` - Architecture details
+- `02_PORTAL_SERVICE.md` - Portal service design
+- And more...
 
 ---
 
-**Last Updated:** December 27, 2025  
-**Status:** All documentation current and accurate ✅
+## 📚 By Topic
+
+### Remote Desktop
+- README.md - Overview and features
+- DEMO_GUIDE.md - Demo instructions
+- specs/02_PORTAL_SERVICE.md - Portal design
+
+### VM Provisioning
+- CAPABILITY_BASED_VM_DISCOVERY.md - Discovery architecture
+- BENCHSCALE_INTEGRATION.md - Integration details
+- DEMO_GUIDE.md - Running VM demos
+
+### Validation & Testing
+- E2E_COMPLETE.md - E2E validation summary
+- DEMO_GUIDE.md - Test procedures
+- reports/DEPLOYMENT_REPORT.md - Deployment testing
+
+### Configuration
+- DEMO_GUIDE.md - Environment variables
+- FINAL_STATUS_COMPLETE.md - Configuration reference
+- QUICKSTART.md - Basic setup
+
+---
+
+## 🎯 By Use Case
+
+### "I want to understand the project"
+1. README.md - Overview
+2. STATUS.md - Current state
+3. CAPABILITY_BASED_VM_DISCOVERY.md - Architecture
+
+### "I want to run a demo"
+1. READY_FOR_DEMO.md - Quick reference
+2. DEMO_GUIDE.md - Complete guide
+3. ./RUN_DEMO.sh - Run it!
+
+### "I want to build and deploy"
+1. QUICKSTART.md - Build instructions
+2. FINAL_STATUS_COMPLETE.md - Configuration
+3. reports/DEPLOYMENT_REPORT.md - Deployment guide
+
+### "I want to contribute"
+1. README.md - Architecture and principles
+2. STATUS.md - Current status
+3. NEXT_STEPS.md - Future work
+
+### "I want detailed technical info"
+1. CAPABILITY_BASED_VM_DISCOVERY.md - Discovery patterns
+2. BENCHSCALE_INTEGRATION.md - Integration details
+3. reports/ - Session reports
+4. specs/ - Specifications
+
+---
+
+## 📁 Documentation Structure
+
+```
+ionChannel/
+├── README.md                          # Main overview
+├── QUICKSTART.md                      # Build & run
+├── STATUS.md                          # Current status
+├── FINAL_STATUS_COMPLETE.md           # Comprehensive status
+├── READY_FOR_DEMO.md                  # Demo quick reference
+├── DEMO_GUIDE.md                      # Complete demo guide
+├── E2E_COMPLETE.md                    # E2E summary
+├── CAPABILITY_BASED_VM_DISCOVERY.md   # Discovery architecture
+├── BENCHSCALE_INTEGRATION.md          # Integration details
+├── NEXT_STEPS.md                      # Future enhancements
+├── DOCUMENTATION_INDEX.md             # This file
+├── docs/
+│   └── reports/                       # Detailed session reports
+│       ├── COMPREHENSIVE_AUDIT_REPORT.md
+│       ├── EVOLUTION_REPORT.md
+│       ├── DEPLOYMENT_REPORT.md
+│       ├── IMPLEMENTATION_COMPLETE.md
+│       └── EXECUTIVE_SUMMARY.md
+└── specs/                             # Technical specifications
+    ├── 00_MASTER_OVERVIEW.md
+    ├── 01_ARCHITECTURE.md
+    └── ...
+```
+
+---
+
+## 🔍 Finding Specific Information
+
+### Questions & Answers
+
+**Q: How do I run the demo?**  
+A: See [READY_FOR_DEMO.md](../READY_FOR_DEMO.md) or run `./RUN_DEMO.sh`
+
+**Q: What's the current project status?**  
+A: See [STATUS.md](../STATUS.md) or [FINAL_STATUS_COMPLETE.md](../FINAL_STATUS_COMPLETE.md)
+
+**Q: How does capability-based discovery work?**  
+A: See [CAPABILITY_BASED_VM_DISCOVERY.md](../CAPABILITY_BASED_VM_DISCOVERY.md)
+
+**Q: How is benchScale integrated?**  
+A: See [BENCHSCALE_INTEGRATION.md](../BENCHSCALE_INTEGRATION.md)
+
+**Q: What configuration options are available?**  
+A: See [DEMO_GUIDE.md](../DEMO_GUIDE.md) configuration section
+
+**Q: What was completed in this session?**  
+A: See [E2E_COMPLETE.md](../E2E_COMPLETE.md) and [reports/](./reports/)
+
+**Q: How do I build from source?**  
+A: See [QUICKSTART.md](../QUICKSTART.md)
+
+**Q: What are the next steps?**  
+A: See [NEXT_STEPS.md](../NEXT_STEPS.md)
+
+---
+
+## 🚀 Quick Commands
+
+```bash
+# Build everything
+cargo build --workspace --all-features
+
+# Run tests
+cargo test --workspace
+
+# Run full E2E demo
+./RUN_DEMO.sh
+
+# Run test suite
+./TEST_SUITE.sh
+
+# Quick VM test
+cargo run -p ion-validation --example create_working_vm --features libvirt
+
+# Discovery demo
+cargo run -p ion-validation --example discover_and_provision --features libvirt
+```
+
+---
+
+## 📝 Documentation Maintenance
+
+### Core Files (Keep in Root)
+- README.md - Main entry point
+- STATUS.md - Current status
+- QUICKSTART.md - Getting started
+- DEMO_GUIDE.md - Comprehensive demo guide
+- FINAL_STATUS_COMPLETE.md - Complete status
+- Architecture docs (CAPABILITY_BASED_VM_DISCOVERY.md, etc.)
+
+### Reports (In docs/reports/)
+- Session reports
+- Audit findings
+- Evolution summaries
+- Historical records
+
+### Specifications (In specs/)
+- Technical specifications
+- Design documents
+- Requirements
+
+---
+
+**For most users, start with [README.md](../README.md) then [DEMO_GUIDE.md](../DEMO_GUIDE.md)!**
