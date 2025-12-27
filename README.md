@@ -38,6 +38,7 @@ Detailed instructions: [QUICKSTART.md](QUICKSTART.md)
 
 ### Getting Started
 - **[QUICK_START.md](QUICK_START.md)** ⭐ - Fastest way to get started!
+- **[AUTONOMOUS_PROVISIONING.md](AUTONOMOUS_PROVISIONING.md)** 🤖 - Zero-human-interaction VM provisioning
 - **[QUICKSTART.md](QUICKSTART.md)** - Detailed build and run instructions
 - **[STATUS.md](STATUS.md)** - Current project status and metrics
 - **[PROJECT_COMPLETION_SUMMARY.md](PROJECT_COMPLETION_SUMMARY.md)** - Complete project overview

@@ -10,8 +10,9 @@ Complete guide to all ionChannel documentation.
 
 1. **[QUICK_START.md](QUICK_START.md)** ⭐ - **Fastest way to get started!**
 2. **[README.md](README.md)** - Project overview
-3. **[STATUS.md](STATUS.md)** - Current implementation status
-4. **[PROJECT_COMPLETION_SUMMARY.md](PROJECT_COMPLETION_SUMMARY.md)** - Complete project summary
+3. **[AUTONOMOUS_PROVISIONING.md](AUTONOMOUS_PROVISIONING.md)** 🤖 - Zero-human-interaction provisioning
+4. **[STATUS.md](STATUS.md)** - Current implementation status
+5. **[PROJECT_COMPLETION_SUMMARY.md](PROJECT_COMPLETION_SUMMARY.md)** - Complete project summary
 
 ---
 
