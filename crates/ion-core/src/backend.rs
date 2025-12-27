@@ -77,7 +77,7 @@ pub struct BackendCapabilities {
 /// Stream of captured screen frames.
 ///
 /// This is a placeholder for now - will be properly implemented with
-/// PipeWire streams for Wayland and appropriate mechanism for X11.
+/// `PipeWire` streams for Wayland and appropriate mechanism for X11.
 pub struct CaptureStream {
     /// Session this stream belongs to
     pub session_id: SessionId,
@@ -160,7 +160,7 @@ pub trait CompositorBackend: Send + Sync {
     /// Start capturing screen content for a session.
     ///
     /// Returns a stream of captured frames. The implementation depends
-    /// on the display server (PipeWire for Wayland, etc.).
+    /// on the display server (`PipeWire` for Wayland, etc.).
     async fn start_capture(&self, session: &SessionId) -> BackendResult<CaptureStream>;
 
     /// Get the capabilities of this backend.

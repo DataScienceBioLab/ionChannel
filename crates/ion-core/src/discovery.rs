@@ -181,7 +181,7 @@ impl Default for BackendRegistry {
     }
 }
 
-/// Convert BackendCapabilities to a list of Capability enums.
+/// Convert `BackendCapabilities` to a list of Capability enums.
 pub fn capabilities_to_list(caps: &BackendCapabilities) -> Vec<Capability> {
     let mut result = vec![Capability::DisplayServer(caps.display_server_type)];
 

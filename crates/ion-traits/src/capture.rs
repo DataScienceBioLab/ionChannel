@@ -174,7 +174,7 @@ impl CaptureFrame {
     /// Create a new `Frame` with shared data.
     ///
     /// Uses `Arc` for zero-copy sharing across threads.
-    #[must_use]
+    
     pub const fn with_shared_data(metadata: FrameMetadata, data: Arc<Vec<u8>>) -> Self {
         Self { metadata, data }
     }
