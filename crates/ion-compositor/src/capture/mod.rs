@@ -8,9 +8,10 @@
 //!
 //! This module implements a fallback hierarchy for screen capture:
 //!
-//! 1. **Tier 1: DMA-BUF** — GPU zero-copy (best performance)
-//! 2. **Tier 2: wl_shm** — Shared memory (works in VMs)
-//! 3. **Tier 3: CPU** — Framebuffer copy (universal fallback)
+//! 1. **Tier 1: PipeWire** — Modern Linux standard (works everywhere)
+//! 2. **Tier 2: DMA-BUF** — GPU zero-copy (compositor-specific)
+//! 3. **Tier 3: wl_shm** — Shared memory (works in VMs)
+//! 4. **Tier 4: CPU** — Framebuffer copy (universal fallback)
 //!
 //! # Architecture
 //!

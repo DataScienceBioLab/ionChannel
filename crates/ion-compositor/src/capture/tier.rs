@@ -19,8 +19,10 @@ pub enum CaptureTier {
     Cpu = 1,
     /// Shared memory capture — works in VMs.
     Shm = 2,
-    /// DMA-BUF capture — GPU zero-copy (best).
+    /// DMA-BUF capture — GPU zero-copy (compositor-specific).
     Dmabuf = 3,
+    /// PipeWire capture — modern Linux standard (recommended).
+    PipeWire = 4,
 }
 
 impl CaptureTier {
@@ -32,6 +34,7 @@ impl CaptureTier {
             Self::Cpu => "CPU Framebuffer",
             Self::Shm => "Shared Memory",
             Self::Dmabuf => "DMA-BUF (GPU)",
+            Self::PipeWire => "PipeWire (Portal)",
         }
     }
 
@@ -45,6 +48,7 @@ impl CaptureTier {
     #[must_use]
     pub const fn estimated_latency_ms(&self) -> u32 {
         match self {
+            Self::PipeWire => 2, // PipeWire handles optimization internally
             Self::Dmabuf => 2,
             Self::Shm => 10,
             Self::Cpu => 30,
@@ -223,6 +227,7 @@ impl TierSelector {
     /// Selects the best available capture tier.
     ///
     /// This performs actual capability probing, not just heuristics.
+    /// Tries PipeWire first (modern standard), then fallback tiers.
     pub async fn select_best(&self) -> CaptureTier {
         // Check prerequisites
         if self.env_info.wayland_display.is_none() {
@@ -230,7 +235,13 @@ impl TierSelector {
             return CaptureTier::None;
         }
 
-        // Try tiers in order of preference
+        // Try PipeWire first (modern standard, works everywhere)
+        if self.try_pipewire().await {
+            info!(tier = %CaptureTier::PipeWire, "Selected capture tier");
+            return CaptureTier::PipeWire;
+        }
+
+        // Fall back to direct protocol implementations
         if self.try_dmabuf().await {
             info!(tier = %CaptureTier::Dmabuf, "Selected capture tier");
             return CaptureTier::Dmabuf;
@@ -248,6 +259,48 @@ impl TierSelector {
 
         warn!("No capture tier available, running in input-only mode");
         CaptureTier::None
+    }
+
+    /// Attempts to probe PipeWire support.
+    async fn try_pipewire(&self) -> bool {
+        // PipeWire requires XDG_RUNTIME_DIR and Wayland
+        if !self.env_info.has_runtime_dir {
+            debug!("PipeWire requires XDG_RUNTIME_DIR");
+            return false;
+        }
+
+        // Check if PipeWire daemon is available
+        // In a real environment, this would check for PipeWire socket
+        let pw_socket = format!(
+            "{}/pipewire-0",
+            std::env::var("XDG_RUNTIME_DIR").unwrap_or_default()
+        );
+        
+        if !std::path::Path::new(&pw_socket).exists() {
+            debug!("PipeWire socket not found at {}", pw_socket);
+            return false;
+        }
+
+        // Check if xdg-desktop-portal is available (D-Bus service)
+        if let Ok(connection) = zbus::Connection::session().await {
+            if connection
+                .call_method(
+                    Some("org.freedesktop.portal.Desktop"),
+                    "/org/freedesktop/portal/desktop",
+                    Some("org.freedesktop.DBus.Introspectable"),
+                    "Introspect",
+                    &(),
+                )
+                .await
+                .is_ok()
+            {
+                debug!("xdg-desktop-portal is available, PipeWire capture ready");
+                return true;
+            }
+        }
+
+        debug!("xdg-desktop-portal not available");
+        false
     }
 
     /// Attempts to probe dmabuf support.
@@ -279,6 +332,7 @@ impl TierSelector {
     /// Selects a specific tier if available.
     pub async fn select_tier(&self, tier: CaptureTier) -> Option<CaptureTier> {
         let available = match tier {
+            CaptureTier::PipeWire => self.try_pipewire().await,
             CaptureTier::Dmabuf => self.try_dmabuf().await,
             CaptureTier::Shm => self.try_shm().await,
             CaptureTier::Cpu => self.try_cpu().await,
@@ -305,6 +359,7 @@ mod tests {
 
     #[test]
     fn tier_ordering() {
+        assert!(CaptureTier::PipeWire > CaptureTier::Dmabuf);
         assert!(CaptureTier::Dmabuf > CaptureTier::Shm);
         assert!(CaptureTier::Shm > CaptureTier::Cpu);
         assert!(CaptureTier::Cpu > CaptureTier::None);
@@ -312,6 +367,7 @@ mod tests {
 
     #[test]
     fn tier_has_capture() {
+        assert!(CaptureTier::PipeWire.has_capture());
         assert!(CaptureTier::Dmabuf.has_capture());
         assert!(CaptureTier::Shm.has_capture());
         assert!(CaptureTier::Cpu.has_capture());
@@ -324,10 +380,12 @@ mod tests {
         assert_eq!(CaptureTier::Cpu.name(), "CPU Framebuffer");
         assert_eq!(CaptureTier::Shm.name(), "Shared Memory");
         assert_eq!(CaptureTier::Dmabuf.name(), "DMA-BUF (GPU)");
+        assert_eq!(CaptureTier::PipeWire.name(), "PipeWire (Portal)");
     }
 
     #[test]
     fn tier_estimated_latency() {
+        assert_eq!(CaptureTier::PipeWire.estimated_latency_ms(), 2);
         assert_eq!(CaptureTier::Dmabuf.estimated_latency_ms(), 2);
         assert_eq!(CaptureTier::Shm.estimated_latency_ms(), 10);
         assert_eq!(CaptureTier::Cpu.estimated_latency_ms(), 30);
@@ -355,6 +413,7 @@ mod tests {
         assert_eq!(CaptureTier::Cpu as u8, 1);
         assert_eq!(CaptureTier::Shm as u8, 2);
         assert_eq!(CaptureTier::Dmabuf as u8, 3);
+        assert_eq!(CaptureTier::PipeWire as u8, 4);
     }
 
     #[test]
@@ -509,7 +568,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn tier_selector_select_best_dmabuf() {
+    async fn tier_selector_select_best_pipewire() {
         let env = EnvironmentInfo {
             is_vm: false,
             has_drm: true,
@@ -519,8 +578,9 @@ mod tests {
         };
         let selector = TierSelector::with_env(env);
         let tier = selector.select_best().await;
-        // Should select dmabuf as it's the best
-        assert_eq!(tier, CaptureTier::Dmabuf);
+        // Should select PipeWire as it's the best (when available)
+        // In test environment without actual PipeWire, falls back to dmabuf
+        assert!(tier == CaptureTier::PipeWire || tier == CaptureTier::Dmabuf);
     }
 
     #[tokio::test]
@@ -534,8 +594,8 @@ mod tests {
         };
         let selector = TierSelector::with_env(env);
         let tier = selector.select_best().await;
-        // Should fall back to shm
-        assert_eq!(tier, CaptureTier::Shm);
+        // Should select PipeWire if available, or fall back to shm
+        assert!(tier == CaptureTier::PipeWire || tier == CaptureTier::Shm);
     }
 
     #[tokio::test]

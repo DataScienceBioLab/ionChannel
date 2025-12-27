@@ -97,6 +97,7 @@ impl CapabilityProvider {
 
         let capture_available = self.capture_tier.map_or(false, |t| t.has_capture());
         let capture_tier = self.capture_tier.and_then(|t| match t {
+            CaptureTier::PipeWire => Some(CaptureTierInfo::Dmabuf), // PipeWire uses DMA-BUF when possible
             CaptureTier::Dmabuf => Some(CaptureTierInfo::Dmabuf),
             CaptureTier::Shm => Some(CaptureTierInfo::Shm),
             CaptureTier::Cpu => Some(CaptureTierInfo::Cpu),
@@ -135,6 +136,7 @@ impl CapabilityProvider {
         }
 
         let capture = match self.capture_tier {
+            Some(CaptureTier::PipeWire) => "PipeWire (Portal)",
             Some(CaptureTier::Dmabuf) => "GPU (dmabuf)",
             Some(CaptureTier::Shm) => "Shared Memory",
             Some(CaptureTier::Cpu) => "CPU",
