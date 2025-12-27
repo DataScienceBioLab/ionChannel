@@ -1,0 +1,73 @@
+# ionChannel RustDesk Test Topology
+
+metadata:
+  name: ionChannel-rustdesk-test
+  description: "Single VM test environment for ionChannel RemoteDesktop portal + RustDesk"
+  version: "1.0"
+  tags: ["ionChannel", "rustdesk", "wayland", "cosmic", "vm"]
+
+network:
+  name: ionChannel-net
+  subnet: "192.168.122.0/24"
+
+nodes:
+  - name: test-vm
+    # Base image (Ubuntu cloud image or custom Pop!_OS cloud image)
+    image: ubuntu-22.04-cloudimg
+    
+    # VM resources
+    memory_mb: 4096
+    vcpus: 2
+    disk_gb: 20
+    
+    # Cloud-init configuration
+    cloud_init:
+      # User setup
+      user: iontest
+      password: iontest  # Plain-text password for testing
+      ssh_authorized_keys: []
+      
+      # Packages to install
+      packages:
+        - openssh-server
+        - rustdesk
+        - build-essential
+        - git
+        - curl
+        - wget
+        # ionChannel dependencies
+        - libpipewire-0.3-dev
+        - libdbus-1-dev
+        - libglib2.0-dev
+        
+      # Commands to run on first boot
+      runcmd:
+        - systemctl enable ssh
+        - systemctl start ssh
+        # Ensure RustDesk service is available
+        - rustdesk --install-service || true
+    
+    # Files/binaries to deploy after VM creation
+    deploy:
+      # ionChannel portal binary
+      - src: ./ionChannel/target/release/ion-portal
+        dest: /usr/local/bin/ion-portal
+        mode: "0755"
+      
+      # ionChannel compositor integration (if needed)
+      - src: ./ionChannel/target/release/ion-compositor
+        dest: /usr/local/bin/ion-compositor
+        mode: "0755"
+    
+    # Network conditions (optional, for testing)
+    network_conditions:
+      latency_ms: 10
+      packet_loss_percent: 0.1
+      bandwidth_kbps: 100000
+    
+    # Environment variables
+    env:
+      RUSTDESK_AUTO_START: "true"
+      ION_CHANNEL_TEST: "true"
+      WAYLAND_DISPLAY: "wayland-0"
+

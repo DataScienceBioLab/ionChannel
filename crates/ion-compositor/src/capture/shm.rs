@@ -33,7 +33,6 @@ use super::{
     CaptureCapabilities, CaptureError, CaptureFrame, CaptureResult, FrameFormat,
     FrameMetadataBuilder, ScreenCapture,
 };
-use crate::capture::CaptureTier;
 
 /// Configuration for shared memory capture.
 #[derive(Debug, Clone)]
@@ -283,6 +282,7 @@ impl ShmCapture {
     }
 
     /// Runs the streaming loop.
+    #[allow(dead_code)]
     async fn streaming_loop(
         self: Arc<Self>,
         target_fps: u32,
@@ -450,7 +450,7 @@ impl ShmCaptureBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::capture::ScreenCaptureExt;
+    use crate::capture::{CaptureTier, ScreenCaptureExt};
 
     #[tokio::test]
     async fn shm_capture_single_frame() {

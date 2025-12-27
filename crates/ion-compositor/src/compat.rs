@@ -33,7 +33,7 @@ use std::time::Instant;
 use async_trait::async_trait;
 
 use crate::capture::{
-    CaptureCapabilities as LocalCapabilities, CaptureTier, ScreenCapture as LocalScreenCapture,
+    CaptureCapabilities as LocalCapabilities, ScreenCapture as LocalScreenCapture,
 };
 use ion_traits::capture::{
     CaptureCapabilities as TraitCapabilities, CaptureFrame as TraitFrame,

@@ -42,6 +42,7 @@
     clippy::missing_errors_doc
 )]
 
+pub mod consent;
 pub mod core;
 pub mod portal;
 pub mod session_manager;

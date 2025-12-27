@@ -11,17 +11,17 @@ use std::time::{Duration, Instant};
 #[repr(u32)]
 pub enum FrameFormat {
     /// 32-bit BGRA (Blue, Green, Red, Alpha).
-    Bgra8888 = 0x34324742, // DRM_FORMAT_ARGB8888
+    Bgra8888 = 0x3432_4742, // DRM_FORMAT_ARGB8888
     /// 32-bit RGBA (Red, Green, Blue, Alpha).
-    Rgba8888 = 0x34324152, // DRM_FORMAT_ABGR8888
+    Rgba8888 = 0x3432_4152, // DRM_FORMAT_ABGR8888
     /// 32-bit XRGB (no alpha, X ignored).
-    Xrgb8888 = 0x34325852, // DRM_FORMAT_XRGB8888
+    Xrgb8888 = 0x3432_5852, // DRM_FORMAT_XRGB8888
     /// 32-bit XBGR (no alpha, X ignored).
-    Xbgr8888 = 0x34324258, // DRM_FORMAT_XBGR8888
+    Xbgr8888 = 0x3432_4258, // DRM_FORMAT_XBGR8888
     /// 24-bit RGB (no alpha).
-    Rgb888 = 0x34324752, // DRM_FORMAT_RGB888
+    Rgb888 = 0x3432_4752, // DRM_FORMAT_RGB888
     /// 24-bit BGR (no alpha).
-    Bgr888 = 0x52474218, // DRM_FORMAT_BGR888
+    Bgr888 = 0x5247_4218, // DRM_FORMAT_BGR888
 }
 
 impl FrameFormat {
@@ -314,8 +314,8 @@ mod tests {
 
     #[test]
     fn frame_format_fourcc() {
-        assert_eq!(FrameFormat::Bgra8888.fourcc(), 0x34324742);
-        assert_eq!(FrameFormat::Rgba8888.fourcc(), 0x34324152);
+        assert_eq!(FrameFormat::Bgra8888.fourcc(), 0x3432_4742);
+        assert_eq!(FrameFormat::Rgba8888.fourcc(), 0x3432_4152);
     }
 
     #[test]

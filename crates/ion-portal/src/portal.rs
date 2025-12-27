@@ -7,15 +7,20 @@
 //! per the xdg-desktop-portal specification.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use tracing::{debug, error, info, instrument, warn};
 use zbus::zvariant::{ObjectPath, OwnedValue, Value};
 
+use ion_core::backend::CompositorBackend;
 use ion_core::device::DeviceType;
 use ion_core::event::{ButtonState, InputEvent, KeyState};
 use ion_core::mode::RemoteDesktopMode;
 use ion_core::session::SessionId;
 
+use crate::consent::{
+    AutoApproveProvider, ConsentProvider, ConsentRequest, DEFAULT_CONSENT_TIMEOUT,
+};
 use crate::session_manager::SessionManager;
 
 /// Portal response codes per xdg-desktop-portal spec.
@@ -36,21 +41,46 @@ pub type PortalResult<T> = (u32, T);
 /// `RemoteDesktop` portal interface.
 ///
 /// This struct implements the D-Bus interface for remote desktop functionality.
-/// It manages sessions and forwards input events to the compositor.
-#[derive(Debug, Clone)]
+/// It manages sessions and forwards input events to the compositor via a
+/// pluggable backend (COSMIC, X11, virtual, etc.).
+#[derive(Clone)]
 pub struct RemoteDesktopPortal {
     session_manager: SessionManager,
     /// The session mode (Full, `InputOnly`, `ViewOnly`, None)
     session_mode: RemoteDesktopMode,
+    /// Consent provider for user authorization
+    consent_provider: Arc<dyn ConsentProvider>,
+    /// Compositor backend for input injection and screen capture
+    backend: Arc<dyn CompositorBackend>,
 }
 
 impl RemoteDesktopPortal {
     /// Creates a new portal instance with full capabilities.
+    ///
+    /// Uses auto-approve consent provider for development/testing.
+    /// For production, use `with_consent_provider()` or `with_backend()`.
     #[must_use]
     pub fn new(session_manager: SessionManager) -> Self {
+        // Use mock backend by default for testing
+        Self::with_backend(
+            session_manager,
+            Arc::new(ion_core::backend::MockBackend::new()),
+        )
+    }
+
+    /// Creates a portal with a specific compositor backend.
+    ///
+    /// This is the main constructor for production use.
+    #[must_use]
+    pub fn with_backend(
+        session_manager: SessionManager,
+        backend: Arc<dyn CompositorBackend>,
+    ) -> Self {
         Self {
             session_manager,
             session_mode: RemoteDesktopMode::Full,
+            consent_provider: Arc::new(AutoApproveProvider::instant()),
+            backend,
         }
     }
 
@@ -58,11 +88,58 @@ impl RemoteDesktopPortal {
     ///
     /// Use this when capability detection indicates limited functionality.
     #[must_use]
-    pub fn with_mode(session_manager: SessionManager, mode: RemoteDesktopMode) -> Self {
+    pub fn with_mode(
+        session_manager: SessionManager,
+        mode: RemoteDesktopMode,
+        backend: Arc<dyn CompositorBackend>,
+    ) -> Self {
         Self {
             session_manager,
             session_mode: mode,
+            consent_provider: Arc::new(AutoApproveProvider::instant()),
+            backend,
         }
+    }
+
+    /// Creates a portal with custom consent provider.
+    ///
+    /// This is the recommended constructor for production use.
+    #[must_use]
+    pub fn with_consent_provider(
+        session_manager: SessionManager,
+        mode: RemoteDesktopMode,
+        consent_provider: Arc<dyn ConsentProvider>,
+        backend: Arc<dyn CompositorBackend>,
+    ) -> Self {
+        Self {
+            session_manager,
+            session_mode: mode,
+            consent_provider,
+            backend,
+        }
+    }
+
+    /// Helper to request consent for device access.
+    async fn request_consent_for_devices(
+        &self,
+        session_id: SessionId,
+        app_id: String,
+        device_types: DeviceType,
+    ) -> bool {
+        let request = ConsentRequest {
+            session_id,
+            app_id,
+            device_types,
+            include_screen_capture: self.session_mode.has_capture(),
+            parent_window: None,
+        };
+
+        let result = self
+            .consent_provider
+            .request_consent(request, DEFAULT_CONSENT_TIMEOUT)
+            .await;
+
+        result.is_granted()
     }
 
     /// Returns a reference to the session manager.
@@ -90,10 +167,10 @@ impl RemoteDesktopPortal {
 #[zbus::interface(name = "org.freedesktop.impl.portal.RemoteDesktop")]
 impl RemoteDesktopPortal {
     /// Creates a new remote desktop session.
-    #[instrument(skip(self, connection, options), fields(app_id = %app_id))]
+    #[instrument(skip(self, _connection, options), fields(app_id = %app_id))]
     async fn create_session(
         &self,
-        #[zbus(connection)] connection: &zbus::Connection,
+        #[zbus(connection)] _connection: &zbus::Connection,
         handle: ObjectPath<'_>,
         session_handle: ObjectPath<'_>,
         app_id: String,
@@ -126,10 +203,10 @@ impl RemoteDesktopPortal {
     }
 
     /// Selects which device types the session should have access to.
-    #[instrument(skip(self, connection, options))]
+    #[instrument(skip(self, _connection, options))]
     async fn select_devices(
         &self,
-        #[zbus(connection)] connection: &zbus::Connection,
+        #[zbus(connection)] _connection: &zbus::Connection,
         handle: ObjectPath<'_>,
         session_handle: ObjectPath<'_>,
         app_id: String,
@@ -153,8 +230,15 @@ impl RemoteDesktopPortal {
         let device_types = DeviceType::from(requested_types);
         debug!(?device_types, "Requested device types");
 
-        // TODO: Show consent dialog here
-        // For now, auto-approve (in real impl, must show dialog)
+        // Request user consent before granting device access
+        let consent_result = self
+            .request_consent_for_devices(session_id.clone(), app_id.clone(), device_types)
+            .await;
+
+        if !consent_result {
+            warn!(session = %session_id, "User denied device access");
+            return (ResponseCode::Other as u32, HashMap::new());
+        }
 
         match session.select_devices(device_types).await {
             Ok(()) => {
@@ -175,15 +259,15 @@ impl RemoteDesktopPortal {
     /// - `session_mode`: Operating mode (0=None, 1=ViewOnly, 2=InputOnly, 3=Full)
     /// - `capture_available`: Whether screen capture is available
     /// - `input_available`: Whether input injection is available
-    #[instrument(skip(self, connection, options))]
+    #[instrument(skip(self, _connection, _options))]
     async fn start(
         &self,
-        #[zbus(connection)] connection: &zbus::Connection,
+        #[zbus(connection)] _connection: &zbus::Connection,
         handle: ObjectPath<'_>,
         session_handle: ObjectPath<'_>,
         app_id: String,
         parent_window: String,
-        options: HashMap<String, OwnedValue>,
+        _options: HashMap<String, OwnedValue>,
     ) -> PortalResult<HashMap<String, OwnedValue>> {
         info!("Start called");
 
@@ -231,11 +315,11 @@ impl RemoteDesktopPortal {
     }
 
     /// Notifies the compositor of relative pointer motion.
-    #[instrument(skip(self, options))]
+    #[instrument(skip(self, _options))]
     async fn notify_pointer_motion(
         &self,
         session_handle: ObjectPath<'_>,
-        options: HashMap<String, OwnedValue>,
+        _options: HashMap<String, OwnedValue>,
         dx: f64,
         dy: f64,
     ) -> zbus::fdo::Result<()> {
@@ -254,11 +338,11 @@ impl RemoteDesktopPortal {
     }
 
     /// Notifies the compositor of absolute pointer motion.
-    #[instrument(skip(self, options))]
+    #[instrument(skip(self, _options))]
     async fn notify_pointer_motion_absolute(
         &self,
         session_handle: ObjectPath<'_>,
-        options: HashMap<String, OwnedValue>,
+        _options: HashMap<String, OwnedValue>,
         stream: u32,
         x: f64,
         y: f64,
@@ -278,11 +362,11 @@ impl RemoteDesktopPortal {
     }
 
     /// Notifies the compositor of a pointer button event.
-    #[instrument(skip(self, options))]
+    #[instrument(skip(self, _options))]
     async fn notify_pointer_button(
         &self,
         session_handle: ObjectPath<'_>,
-        options: HashMap<String, OwnedValue>,
+        _options: HashMap<String, OwnedValue>,
         button: i32,
         state: u32,
     ) -> zbus::fdo::Result<()> {
@@ -304,11 +388,11 @@ impl RemoteDesktopPortal {
     }
 
     /// Notifies the compositor of pointer scroll/axis events.
-    #[instrument(skip(self, options))]
+    #[instrument(skip(self, _options))]
     async fn notify_pointer_axis(
         &self,
         session_handle: ObjectPath<'_>,
-        options: HashMap<String, OwnedValue>,
+        _options: HashMap<String, OwnedValue>,
         dx: f64,
         dy: f64,
     ) -> zbus::fdo::Result<()> {
@@ -327,11 +411,11 @@ impl RemoteDesktopPortal {
     }
 
     /// Notifies the compositor of a keyboard keycode event.
-    #[instrument(skip(self, options))]
+    #[instrument(skip(self, _options))]
     async fn notify_keyboard_keycode(
         &self,
         session_handle: ObjectPath<'_>,
-        options: HashMap<String, OwnedValue>,
+        _options: HashMap<String, OwnedValue>,
         keycode: i32,
         state: u32,
     ) -> zbus::fdo::Result<()> {
@@ -353,11 +437,11 @@ impl RemoteDesktopPortal {
     }
 
     /// Notifies the compositor of a keyboard keysym event.
-    #[instrument(skip(self, options))]
+    #[instrument(skip(self, _options))]
     async fn notify_keyboard_keysym(
         &self,
         session_handle: ObjectPath<'_>,
-        options: HashMap<String, OwnedValue>,
+        _options: HashMap<String, OwnedValue>,
         keysym: i32,
         state: u32,
     ) -> zbus::fdo::Result<()> {
@@ -412,7 +496,11 @@ mod tests {
         tokio::sync::mpsc::Receiver<(SessionId, InputEvent)>,
     ) {
         let (manager, rx) = SessionManager::new(SessionManagerConfig::default());
-        let portal = RemoteDesktopPortal::with_mode(manager, mode);
+        let portal = RemoteDesktopPortal::with_mode(
+            manager,
+            mode,
+            Arc::new(ion_core::backend::MockBackend::new()),
+        );
         (portal, rx)
     }
 

@@ -31,7 +31,6 @@ use super::{
     CaptureCapabilities, CaptureError, CaptureFrame, CaptureResult, FrameFormat,
     FrameMetadataBuilder, ScreenCapture,
 };
-use crate::capture::CaptureTier;
 
 /// DRM format with modifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -81,6 +80,7 @@ struct DmabufCaptureState {
     sequence: AtomicU64,
     streaming: AtomicBool,
     dimensions: (u32, u32),
+    #[allow(dead_code)]
     active_format: DrmFormat,
 }
 
@@ -98,6 +98,7 @@ struct DmabufCaptureState {
 ///
 /// Use `TierSelector` to determine if this backend is available.
 pub struct DmabufCapture {
+    #[allow(dead_code)]
     config: DmabufCaptureConfig,
     capabilities: CaptureCapabilities,
     state: Arc<RwLock<DmabufCaptureState>>,
@@ -252,7 +253,7 @@ impl ScreenCapture for DmabufCapture {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::capture::ScreenCaptureExt;
+    use crate::capture::{CaptureTier, ScreenCaptureExt};
 
     #[tokio::test]
     async fn dmabuf_capture_basic() {
@@ -350,8 +351,8 @@ mod tests {
 
     #[test]
     fn drm_format_construction() {
-        let format = DrmFormat::new(0x34324742, DrmFormat::MODIFIER_LINEAR);
-        assert_eq!(format.fourcc, 0x34324742);
+        let format = DrmFormat::new(0x3432_4742, DrmFormat::MODIFIER_LINEAR);
+        assert_eq!(format.fourcc, 0x3432_4742);
         assert_eq!(format.modifier, 0);
     }
 
@@ -363,16 +364,16 @@ mod tests {
 
     #[test]
     fn drm_format_clone() {
-        let format = DrmFormat::new(0x12345678, 0);
+        let format = DrmFormat::new(0x1234_5678, 0);
         let cloned = format.clone();
         assert_eq!(format, cloned);
     }
 
     #[test]
     fn drm_format_eq() {
-        let f1 = DrmFormat::new(0x12345678, 0);
-        let f2 = DrmFormat::new(0x12345678, 0);
-        let f3 = DrmFormat::new(0x12345678, 1);
+        let f1 = DrmFormat::new(0x1234_5678, 0);
+        let f2 = DrmFormat::new(0x1234_5678, 0);
+        let f3 = DrmFormat::new(0x1234_5678, 1);
 
         assert_eq!(f1, f2);
         assert_ne!(f1, f3);

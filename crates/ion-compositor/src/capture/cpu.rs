@@ -30,7 +30,6 @@ use super::{
     CaptureCapabilities, CaptureFrame, CaptureResult, FrameFormat, FrameMetadataBuilder,
     ScreenCapture,
 };
-use crate::capture::CaptureTier;
 
 /// Configuration for CPU capture.
 #[derive(Debug, Clone)]
@@ -58,6 +57,7 @@ struct CpuCaptureState {
     sequence: AtomicU64,
     streaming: AtomicBool,
     dimensions: (u32, u32),
+    #[allow(dead_code)] // Reserved for future frame differencing optimization
     last_frame_hash: Option<u64>,
 }
 
@@ -207,11 +207,11 @@ impl CpuCapture {
     #[allow(dead_code)]
     fn hash_frame(data: &[u8]) -> u64 {
         // FNV-1a hash (fast, not cryptographic)
-        let mut hash: u64 = 0xcbf29ce484222325;
+        let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
         for &byte in data.iter().step_by(1024) {
             // Sample every 1KB
             hash ^= u64::from(byte);
-            hash = hash.wrapping_mul(0x100000001b3);
+            hash = hash.wrapping_mul(0x0100_0000_01b3);
         }
         hash
     }
@@ -271,7 +271,7 @@ impl ScreenCapture for CpuCapture {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::capture::ScreenCaptureExt;
+    use crate::capture::{CaptureTier, ScreenCaptureExt};
 
     #[tokio::test]
     async fn cpu_capture_basic() {

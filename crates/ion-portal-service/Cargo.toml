@@ -1,0 +1,38 @@
+[package]
+name = "ion-portal-service"
+version.workspace = true
+edition.workspace = true
+license = "AGPL-3.0-or-later"
+description = "Standalone D-Bus service for ionChannel RemoteDesktop portal"
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "xdg-desktop-portal-cosmic"
+path = "src/main.rs"
+
+[dependencies]
+# Internal
+ion-portal.workspace = true
+ion-core.workspace = true
+
+# Backend implementations
+ion-backend-cosmic = { path = "../ion-backend-cosmic" }
+ion-backend-wayland = { path = "../ion-backend-wayland" }
+
+# D-Bus
+zbus.workspace = true
+
+# Async
+tokio = { workspace = true, features = ["full"] }
+
+# Error handling
+anyhow.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+[lints]
+workspace = true
+

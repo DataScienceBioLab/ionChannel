@@ -8,6 +8,9 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
+# Async trait for backend abstraction
+async-trait = "0.1"
+
 # Error handling
 thiserror.workspace = true
 

@@ -16,7 +16,7 @@ zbus.workspace = true
 zvariant.workspace = true
 
 # Async
-tokio = { workspace = true, features = ["sync", "rt"] }
+tokio = { workspace = true, features = ["sync", "rt", "time"] }
 futures.workspace = true
 
 # Serialization

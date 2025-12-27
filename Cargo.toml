@@ -11,6 +11,13 @@ members = [
     # Portal implementation (for upstream to xdg-desktop-portal-cosmic)
     "crates/ion-portal",
     
+    # Standalone portal service (Phase 1: COSMIC, evolving to universal)
+    "crates/ion-portal-service",
+    
+    # Backend implementations
+    "crates/ion-backend-cosmic",
+    "crates/ion-backend-wayland",
+    
     # Compositor input injection (for upstream to cosmic-comp)
     "crates/ion-compositor",
     
@@ -19,6 +26,12 @@ members = [
     
     # Development/testing tools
     "crates/portal-test-client",
+    
+    # Deployment tool (pure Rust)
+    "crates/ion-deploy",
+    
+    # AI-first validation framework
+    "crates/ion-validation",
 ]
 
 [workspace.package]
@@ -118,6 +131,17 @@ ion-compositor.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
+benchscale = { path = "../benchScale", features = ["libvirt"], optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["async_tokio"] }
+anyhow = "1.0"
+benchscale = { path = "../benchScale", features = ["libvirt"] }
+
+[features]
+default = []
+benchscale = ["dep:benchscale"]
+libvirt = ["benchscale", "benchscale/libvirt"]
 
 [[example]]
 name = "full_stack_demo"
@@ -126,3 +150,7 @@ path = "examples/full_stack_demo.rs"
 [[example]]
 name = "smithay_integration"
 path = "examples/smithay_integration.rs"
+
+[[bench]]
+name = "performance"
+harness = false

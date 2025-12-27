@@ -439,7 +439,8 @@ async fn test_dbus_mode_reporting() {
     };
 
     let (manager, _rx) = SessionManager::new(SessionManagerConfig::default());
-    let portal = RemoteDesktopPortal::with_mode(manager, RemoteDesktopMode::InputOnly);
+    let backend = Arc::from(ion_core::backend::MockBackend::new());
+    let portal = RemoteDesktopPortal::with_mode(manager, RemoteDesktopMode::InputOnly, backend);
 
     let path = format!(
         "/org/freedesktop/portal/desktop/test_mode_{}",

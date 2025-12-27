@@ -234,6 +234,7 @@ impl<T: ScreenCapture + ?Sized> ScreenCaptureExt for T {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::capture::CaptureTier;
 
     #[test]
     fn capabilities_ordering() {
