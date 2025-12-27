@@ -9,7 +9,7 @@ use crate::providers::{
     vm::{VmProvisioner, VmSpec},
 };
 use chrono::Utc;
-use futures::stream::{Stream, StreamExt};
+use futures::stream::Stream;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
