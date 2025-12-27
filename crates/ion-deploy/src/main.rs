@@ -7,10 +7,13 @@ use clap::{Parser, Subcommand};
 use console::style;
 use tracing::Level;
 
+mod autonomous;
+mod cloud_init;
 mod config;
 mod deploy;
 mod discovery;
 mod ssh;
+mod ssh_keys;
 
 use discovery::VmDiscovery;
 
