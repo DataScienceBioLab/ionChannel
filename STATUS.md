@@ -234,6 +234,8 @@ Run with: `cargo bench`
 
 ### Ready for Production ✅
 
+**[QUICK_START.md](QUICK_START.md)** ⭐ - Fastest way to get started!
+
 The portal service is production-ready:
 
 ```bash

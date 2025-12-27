@@ -28,7 +28,9 @@ cargo test --workspace
 ./RUN_DEMO.sh
 ```
 
-See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
+**See [QUICK_START.md](QUICK_START.md) for the fastest way to get started!**
+
+Detailed instructions: [QUICKSTART.md](QUICKSTART.md)
 
 ---
 
