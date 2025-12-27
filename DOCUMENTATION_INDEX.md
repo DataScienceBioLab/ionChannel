@@ -11,7 +11,9 @@ New to ionChannel? Start here:
 1. **[README.md](README.md)** - Project overview and quick start
 2. **[QUICKSTART.md](QUICKSTART.md)** - Build and run instructions  
 3. **[STATUS.md](STATUS.md)** - Current status and metrics
-4. **[NEXT_STEPS.md](NEXT_STEPS.md)** - What to do next
+4. **[DEMO_GUIDE.md](DEMO_GUIDE.md)** - ⭐ **Complete demo guide with runnable examples**
+5. **[E2E_COMPLETE.md](E2E_COMPLETE.md)** - ⭐ **E2E implementation summary**
+6. **[NEXT_STEPS.md](NEXT_STEPS.md)** - What to do next
 
 ---
 
