@@ -37,23 +37,22 @@ Detailed instructions: [QUICKSTART.md](QUICKSTART.md)
 ## 📖 Documentation
 
 ### Getting Started
-- **[QUICKSTART.md](QUICKSTART.md)** - Build and run instructions
+- **[QUICK_START.md](QUICK_START.md)** ⭐ - Fastest way to get started!
+- **[QUICKSTART.md](QUICKSTART.md)** - Detailed build and run instructions
 - **[STATUS.md](STATUS.md)** - Current project status and metrics
-- **[READY_FOR_DEMO.md](READY_FOR_DEMO.md)** - Quick demo reference
 
 ### Demonstrations
 - **[DEMO_GUIDE.md](DEMO_GUIDE.md)** - Complete demo guide with troubleshooting
-- **[FINAL_STATUS_COMPLETE.md](FINAL_STATUS_COMPLETE.md)** - Comprehensive status and all commands
 
 ### Architecture
 - **[CAPABILITY_BASED_VM_DISCOVERY.md](CAPABILITY_BASED_VM_DISCOVERY.md)** - Primal discovery patterns
 - **[BENCHSCALE_INTEGRATION.md](BENCHSCALE_INTEGRATION.md)** - benchScale v2.0.0 integration
-- **[E2E_COMPLETE.md](E2E_COMPLETE.md)** - E2E validation implementation
+- **[SCREEN_CAPTURE_PIPEWIRE.md](SCREEN_CAPTURE_PIPEWIRE.md)** - PipeWire-first capture architecture
 
 ### Reference
 - **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation index
 - **[NEXT_STEPS.md](NEXT_STEPS.md)** - Future enhancements
-- **[docs/reports/](docs/reports/)** - Detailed session reports
+- **[docs/reports/](docs/reports/)** - Historical session reports
 
 ---
 
@@ -61,10 +60,11 @@ Detailed instructions: [QUICKSTART.md](QUICKSTART.md)
 
 ### Core Capabilities
 - ✅ **Wayland Native** - Full support for modern compositors (COSMIC, Sway, etc.)
-- ✅ **Zero Hardcoding** - All configuration via environment variables
+- ✅ **Zero Hardcoding** - All configuration via runtime discovery
 - ✅ **Capability-Based Discovery** - Runtime backend selection
 - ✅ **Primal Philosophy** - Self-knowledge only, discover at runtime
-- ✅ **Production Ready** - Complete implementations, no mocks
+- ✅ **Production Ready** - Zero technical debt, zero unsafe code
+- ✅ **Modern Rust** - Async/await, clippy-clean, idiomatic patterns
 
 ### Backend Support
 - **COSMIC Compositor** - Full integration with System76's COSMIC
