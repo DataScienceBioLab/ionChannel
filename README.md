@@ -40,6 +40,7 @@ Detailed instructions: [QUICKSTART.md](QUICKSTART.md)
 - **[QUICK_START.md](QUICK_START.md)** ⭐ - Fastest way to get started!
 - **[QUICKSTART.md](QUICKSTART.md)** - Detailed build and run instructions
 - **[STATUS.md](STATUS.md)** - Current project status and metrics
+- **[PROJECT_COMPLETION_SUMMARY.md](PROJECT_COMPLETION_SUMMARY.md)** - Complete project overview
 
 ### Demonstrations
 - **[DEMO_GUIDE.md](DEMO_GUIDE.md)** - Complete demo guide with troubleshooting
@@ -49,10 +50,13 @@ Detailed instructions: [QUICKSTART.md](QUICKSTART.md)
 - **[BENCHSCALE_INTEGRATION.md](BENCHSCALE_INTEGRATION.md)** - benchScale v2.0.0 integration
 - **[SCREEN_CAPTURE_PIPEWIRE.md](SCREEN_CAPTURE_PIPEWIRE.md)** - PipeWire-first capture architecture
 
+### Testing
+- **[docs/testing/](docs/testing/)** - Test plans and results
+- **[docs/reports/](docs/reports/)** - Historical session reports
+
 ### Reference
 - **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation index
 - **[NEXT_STEPS.md](NEXT_STEPS.md)** - Future enhancements
-- **[docs/reports/](docs/reports/)** - Historical session reports
 
 ---
 
