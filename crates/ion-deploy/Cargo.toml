@@ -11,6 +11,10 @@ repository = "https://github.com/pop-os/ionChannel"
 name = "ion-deploy"
 path = "src/main.rs"
 
+[lib]
+name = "ion_deploy"
+path = "src/lib.rs"
+
 [dependencies]
 # Async runtime
 tokio = { version = "1.42", features = ["full"] }

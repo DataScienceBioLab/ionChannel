@@ -294,6 +294,114 @@ mod tests {
         let config = AutonomousProvisionConfig::default();
         assert_eq!(config.username, "ubuntu");
         assert_eq!(config.ssh_port, 22);
+        assert_eq!(config.ram_mb, 4096);
+        assert_eq!(config.vcpus, 2);
+        assert_eq!(config.disk_gb, 20);
+        assert_eq!(config.network, "default");
+    }
+
+    #[test]
+    fn test_config_customization() {
+        let config = AutonomousProvisionConfig {
+            vm_name: "custom-vm".to_string(),
+            ram_mb: 8192,
+            vcpus: 4,
+            disk_gb: 50,
+            username: "admin".to_string(),
+            ssh_port: 2222,
+            packages: vec!["git".to_string(), "vim".to_string()],
+            ..Default::default()
+        };
+
+        assert_eq!(config.vm_name, "custom-vm");
+        assert_eq!(config.ram_mb, 8192);
+        assert_eq!(config.vcpus, 4);
+        assert_eq!(config.disk_gb, 50);
+        assert_eq!(config.username, "admin");
+        assert_eq!(config.ssh_port, 2222);
+        assert_eq!(config.packages.len(), 2);
+    }
+
+    #[test]
+    fn test_provisioner_creation() {
+        let config = AutonomousProvisionConfig::default();
+        let provisioner = AutonomousProvisioner::new(config.clone());
+
+        // Should create successfully
+        assert_eq!(provisioner.config.vm_name, config.vm_name);
+    }
+
+    #[tokio::test]
+    async fn test_autonomous_provisioner_destroy_idempotent() {
+        let config = AutonomousProvisionConfig {
+            vm_name: "test-destroy-vm".to_string(),
+            ..Default::default()
+        };
+
+        let provisioner = AutonomousProvisioner::new(config);
+
+        // Should not fail even if VM doesn't exist
+        let result = provisioner.destroy().await;
+        assert!(result.is_ok());
+
+        // Should be idempotent
+        let result2 = provisioner.destroy().await;
+        assert!(result2.is_ok());
+    }
+
+    #[test]
+    fn test_config_work_dir_creation() {
+        let config = AutonomousProvisionConfig {
+            work_dir: std::env::temp_dir().join("test_work_dir"),
+            ..Default::default()
+        };
+
+        // Work dir should be in temp
+        assert!(config.work_dir.starts_with(std::env::temp_dir()));
+    }
+
+    #[test]
+    fn test_config_base_image_path() {
+        let config = AutonomousProvisionConfig::default();
+        
+        // Should have a base image path
+        assert!(config.base_image.to_string_lossy().contains("ubuntu"));
+        assert!(config.base_image.to_string_lossy().contains("cloudimg"));
+    }
+
+    #[test]
+    fn test_config_with_custom_packages() {
+        let packages = vec![
+            "docker.io".to_string(),
+            "build-essential".to_string(),
+            "git".to_string(),
+        ];
+
+        let config = AutonomousProvisionConfig {
+            packages: packages.clone(),
+            ..Default::default()
+        };
+
+        assert_eq!(config.packages, packages);
+    }
+
+    #[test]
+    fn test_config_clone() {
+        let config1 = AutonomousProvisionConfig::default();
+        let config2 = config1.clone();
+
+        assert_eq!(config1.vm_name, config2.vm_name);
+        assert_eq!(config1.ram_mb, config2.ram_mb);
+        assert_eq!(config1.username, config2.username);
+    }
+
+    #[test]
+    fn test_config_debug() {
+        let config = AutonomousProvisionConfig::default();
+        let debug_str = format!("{:?}", config);
+
+        assert!(debug_str.contains("AutonomousProvisionConfig"));
+        assert!(debug_str.contains("vm_name"));
     }
 }
 

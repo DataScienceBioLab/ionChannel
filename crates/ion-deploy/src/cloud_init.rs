@@ -253,6 +253,7 @@ pub fn create_cloud_init_iso(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[test]
     fn test_cloud_init_builder() {
@@ -285,6 +286,161 @@ mod tests {
         assert!(yaml.starts_with("#cloud-config"));
         assert!(yaml.contains("hostname: test-vm"));
         assert!(yaml.contains("testuser"));
+    }
+
+    #[test]
+    fn test_cloud_init_multiple_users() {
+        let config = CloudInitBuilder::new()
+            .hostname("multi-user-vm")
+            .add_user("user1", vec!["key1".to_string()])
+            .add_user("user2", vec!["key2".to_string()])
+            .build();
+
+        assert_eq!(config.users.len(), 2);
+        assert_eq!(config.users[0].name, "user1");
+        assert_eq!(config.users[1].name, "user2");
+    }
+
+    #[test]
+    fn test_cloud_init_defaults() {
+        let config = CloudInitBuilder::new().build();
+
+        // Should have sensible defaults
+        assert!(config.package_update);
+        assert!(!config.package_upgrade);
+        assert!(!config.ssh_pwauth);
+        assert!(config.packages.contains(&"openssh-server".to_string()));
+        assert!(config.packages.contains(&"python3".to_string()));
+    }
+
+    #[test]
+    fn test_cloud_init_with_files() {
+        let file = CloudInitFile {
+            path: "/tmp/test.txt".to_string(),
+            content: "Hello World".to_string(),
+            permissions: Some("0644".to_string()),
+            owner: Some("root:root".to_string()),
+        };
+
+        let config = CloudInitBuilder::new()
+            .add_file(file.clone())
+            .build();
+
+        assert_eq!(config.write_files.len(), 1);
+        assert_eq!(config.write_files[0].path, "/tmp/test.txt");
+        assert_eq!(config.write_files[0].content, "Hello World");
+    }
+
+    #[test]
+    fn test_cloud_init_hostname_sets_fqdn() {
+        let config = CloudInitBuilder::new()
+            .hostname("myvm")
+            .build();
+
+        assert_eq!(config.hostname, Some("myvm".to_string()));
+        assert_eq!(config.fqdn, Some("myvm.local".to_string()));
+    }
+
+    #[test]
+    fn test_cloud_init_password_auth() {
+        let config_disabled = CloudInitBuilder::new().build();
+        assert!(!config_disabled.ssh_pwauth);
+
+        let config_enabled = CloudInitBuilder::new()
+            .enable_password_auth(true)
+            .build();
+        assert!(config_enabled.ssh_pwauth);
+    }
+
+    #[test]
+    fn test_cloud_init_package_upgrade() {
+        let config_disabled = CloudInitBuilder::new().build();
+        assert!(!config_disabled.package_upgrade);
+
+        let config_enabled = CloudInitBuilder::new()
+            .enable_package_upgrade(true)
+            .build();
+        assert!(config_enabled.package_upgrade);
+    }
+
+    #[test]
+    fn test_cloud_init_build_to_file() {
+        let temp_dir = std::env::temp_dir();
+        let user_data_path = temp_dir.join("test_user_data.yaml");
+
+        let builder = CloudInitBuilder::new()
+            .hostname("test-vm")
+            .add_user("testuser", vec!["ssh-rsa test".to_string()]);
+
+        builder.build_to_file(&user_data_path).expect("Failed to write file");
+
+        assert!(user_data_path.exists());
+
+        let content = fs::read_to_string(&user_data_path).expect("Failed to read file");
+        assert!(content.starts_with("#cloud-config"));
+        assert!(content.contains("hostname: test-vm"));
+
+        // Cleanup
+        let _ = fs::remove_file(&user_data_path);
+    }
+
+    #[test]
+    fn test_cloud_init_user_has_sudo() {
+        let config = CloudInitBuilder::new()
+            .add_user("admin", vec!["key".to_string()])
+            .build();
+
+        assert_eq!(config.users[0].sudo, Some("ALL=(ALL) NOPASSWD:ALL".to_string()));
+        assert_eq!(config.users[0].lock_passwd, Some(true));
+    }
+
+    #[test]
+    fn test_cloud_init_default() {
+        let builder1 = CloudInitBuilder::default();
+        let builder2 = CloudInitBuilder::new();
+
+        let config1 = builder1.build();
+        let config2 = builder2.build();
+
+        assert_eq!(config1.ssh_pwauth, config2.ssh_pwauth);
+        assert_eq!(config1.package_update, config2.package_update);
+    }
+
+    #[test]
+    fn test_create_meta_data() {
+        let temp_dir = std::env::temp_dir();
+        let meta_data_path = temp_dir.join("test_meta_data");
+
+        create_meta_data("test-instance", &meta_data_path).expect("Failed to create meta-data");
+
+        assert!(meta_data_path.exists());
+
+        let content = fs::read_to_string(&meta_data_path).expect("Failed to read meta-data");
+        assert!(content.contains("instance-id: test-instance"));
+        assert!(content.contains("local-hostname: test-instance"));
+
+        // Cleanup
+        let _ = fs::remove_file(&meta_data_path);
+    }
+
+    #[test]
+    fn test_cloud_init_yaml_is_valid() {
+        let builder = CloudInitBuilder::new()
+            .hostname("test")
+            .add_user("ubuntu", vec!["ssh-rsa test".to_string()])
+            .add_packages(vec!["vim".to_string()])
+            .add_runcmd(vec!["systemctl start ssh".to_string()]);
+
+        let yaml = builder.build_yaml().expect("Failed to generate YAML");
+
+        // Parse it back to verify it's valid YAML
+        let parsed: serde_yaml::Value = serde_yaml::from_str(&yaml)
+            .expect("Generated YAML is not valid");
+
+        assert!(parsed.get("hostname").is_some());
+        assert!(parsed.get("users").is_some());
+        assert!(parsed.get("packages").is_some());
+        assert!(parsed.get("runcmd").is_some());
     }
 }
 

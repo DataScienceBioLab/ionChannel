@@ -43,7 +43,7 @@ impl Config {
 
         if config_path.exists() {
             let content = std::fs::read_to_string(&config_path)?;
-            let config: Config = toml::from_str(&content)?;
+            let config: Config = ::toml::from_str(&content)?;
             Ok(config)
         } else {
             Ok(Self::default())
@@ -59,7 +59,7 @@ impl Config {
             std::fs::create_dir_all(parent)?;
         }
 
-        let content = toml::to_string_pretty(self)?;
+        let content = ::toml::to_string_pretty(self)?;
         std::fs::write(&config_path, content)?;
 
         Ok(())
